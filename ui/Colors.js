@@ -1,0 +1,5 @@
+export const LIGHT_YELLOW = "#FFF9C4"
+export const LBG1 = "#ECEFF1"
+export const LBG2 = "#CFD8DC"
+export const RED1 = "#F44336"
+export const GREEN1 = "#00E676" 
