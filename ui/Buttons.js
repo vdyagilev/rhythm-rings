@@ -1,40 +1,40 @@
+import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
-import { Text, View, StyleSheet, Pressable } from 'react-native';
-import { getDeviceWidth } from '../Helpers';
-import { GREEN1, RED1 } from './Colors';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { getDeviceNormFactor, getScreenWidth } from '../Helpers';
+import { DefaultPallete } from './Colors';
 
 export function PlayButton(props) {
   const { onPressPlay, onPressStop, isPlaying } = props;
 
   // Flip between Play and Stop mode  
   var backgroundColor
-  var buttonText
+  var buttonIcon
   var onPress
   if (isPlaying){
-    backgroundColor = RED1
-    buttonText = "STOP"
+    backgroundColor = DefaultPallete.stopButton
+    buttonIcon = <FontAwesome5 name="pause" size={ 20 * getDeviceNormFactor() } color={DefaultPallete.playButtonText} />
     onPress = onPressStop
   } else {
-    backgroundColor = GREEN1
-    buttonText = "PLAY"
+    backgroundColor = DefaultPallete.playButton
+    buttonIcon = <FontAwesome5 name="play" size={ 20 * getDeviceNormFactor()} color={DefaultPallete.playButtonText} />
     onPress = onPressPlay
   }
 
   return (
     <Pressable style={[styles.play_button, {backgroundColor: backgroundColor}]} onPress={onPress}>
-      <Text style={[styles.play_button_text, {backgroundColor: backgroundColor}]}>{buttonText}</Text>
+      { buttonIcon }
     </Pressable>
   );
 }
 
-
 export function TwoItemButton(props) {
   // Horizontally spaced two item button
-  const { item1, item2, onPress, containerStyle } = props;
+  const { item1, item2, onPress, containerStyle} = props;
 
   return (
-    <Pressable style={styles.icon_text_button} onPress={onPress}>
-      <View style={[{flex: 1, flexDirection: 'row', justifyContent: 'space-around'}, containerStyle]}>
+    <Pressable style={[styles.icon_text_button,  containerStyle]} onPress={onPress}>
+      <View style={{flex: 1,  alignItems: 'center', justifyContent: 'space-between',}}>
         {item1}
         {item2}
       </View>
@@ -45,34 +45,21 @@ export function TwoItemButton(props) {
 const styles = StyleSheet.create({
   // Play Button
   play_button: {
+    width: "80%",
+
+
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 10,
-    borderRadius: 4,
+
+    padding: 20,
+    borderRadius: getScreenWidth(),
     elevation: 3,
-    flex: 1,
-  },
-  play_button_text: {
-    fontSize: 20,
-    lineHeight: 21,
-    fontWeight: 'bold',
-    letterSpacing: 0.25,
-    color: 'white',
   },
   // Icon Button
   icon_text_button: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 10,
     borderRadius: 4,
     elevation: 3,
-    flex: 1,
-  },
-  icon_text_button_text: {
-    fontSize: 20,
-    lineHeight: 21,
-    fontWeight: 'bold',
-    letterSpacing: 0.25,
-    color: 'white',
   },
 });

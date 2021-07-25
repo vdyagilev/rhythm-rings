@@ -1,87 +1,113 @@
-import { Button, StyleSheet, Text, View } from 'react-native';
-import * as React from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
-import { useState } from 'react';
-import { setIsPlaying, setEditMode } from '../storage/Actions';
-import { connect } from 'react-redux';
 import { AntDesign } from '@expo/vector-icons';
-
-import { DefaultStyling } from './Styles'
-import { getDeviceHeight, getDeviceWidth } from '../Helpers';
-import { LBG2, RED1 } from '../ui/Colors';
-import { GOLDEN_RATIO } from '../ui/Properties';
+import { createStackNavigator } from '@react-navigation/stack';
+import * as React from 'react';
+import { useEffect } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { connect } from 'react-redux';
+import { bpmToMilli, getDeviceNormFactor, loopIncrement } from '../Helpers';
+import { setEditMode, setIsPlaying } from '../storage/Actions';
 import { PlayButton, TwoItemButton } from '../ui/Buttons';
+import { DefaultPallete } from '../ui/Colors';
+import { RhythmVisualizer } from '../ui/Visualizer';
+import { DefaultStyling } from './Styles';
 
 
-function HomeScreen({ navigation, isPlaying, dispatch}) {
-    const [open, setOpen] = useState(false);
-    const [value, setValue] = useState(null);
-    const [items, setItems] = useState([
-      {label: 'Apple', value: 'apple'},
-      {label: 'Banana', value: 'banana'}
-    ]);
 
-    // Play button actions
-    const startGame = () => {
-      dispatch(setIsPlaying(true))
+function HomeScreen({ navigation, dispatch, isPlaying, rhythm, bpm}) {  
+  // Manage rhythmic clock rotation at BPM update rate
+  const [onBeat, setOnBeat] = React.useState(0)
+  const [timerFunc, setTimerFunc] = React.useState(null)
+  
+
+  useEffect(() => {
+    if (timerFunc && isPlaying) {
+      // We have come here after a timerFunc refresh (clocktick), and
+      // we must launch another one!
+      tick()
+
     }
+  })
 
-    const stopGame = () => {
-      dispatch(setIsPlaying(false))
-    }
+  const tick = () => {
+    // set timer to tick forward intervallically
+    const timerID = setTimeout(() => {setOnBeat( loopIncrement(onBeat, rhythm.length-1) )}, bpmToMilli(bpm))
+    setTimerFunc(timerID)
+  }
 
-    const setMode = (mode) => {
-      dispatch(setEditMode(mode))
-    } 
-    
-    // Action button styling
-    const actionButtonSize = 25
-    const createActionColor = 'green'
-    const deleteActionColor = 'red'
+  // Play button actions
+  const startGame = () => {
+    dispatch(setIsPlaying(true))
 
-    return (
-      <View style={ DefaultStyling.screen }>
-          <View style={{flex: 1, }}></View>
+    tick()
+  }
 
-          <View style={ styles.action_buttons_container }>
-            {/* Action Menu is from Top to Bottom: 1. New Ring, 2. Delete Ring, 3. New Pulse, 4. Delete Pulse */}
-            <TwoItemButton 
-              item1={<AntDesign name="pluscircleo" size={actionButtonSize} color={createActionColor}/>} 
-              item2={<Text></Text>}
-              onPress={() => setMode("new_ring")} containerStyle={styles.action_button}
-            />
-            <TwoItemButton 
-              item1={<AntDesign name="minuscircleo" size={actionButtonSize} color={deleteActionColor}/>} 
-              item2={<Text></Text>}
-              onPress={() => setMode("del_ring")} containerStyle={styles.action_button}
-            />
-            <TwoItemButton 
-              item1={<AntDesign name="pluscircle" size={actionButtonSize} color={createActionColor}/>} 
-              item2={<Text></Text>}
-              onPress={() => setMode("new_pulse")} containerStyle={styles.action_button}
-            />
-            <TwoItemButton 
-              item1={<AntDesign name="minuscircle" size={actionButtonSize} color={deleteActionColor}/>} 
-              item2={<Text></Text>}
-              onPress={() => setMode("del_pulse")} containerStyle={styles.action_button}
-            />
-          </View>
+  const stopGame = () => {
+    dispatch(setIsPlaying(false))
 
-          <View style={ styles.play_menu_container }>
-              <PlayButton 
-                onPressPlay={startGame}
-                onPressStop={stopGame}
-                isPlaying={ isPlaying }
-              />
-            </View>
+    clearTimeout(timerFunc)
+    setTimerFunc(null)
+  }
+
+  const setMode = (mode) => {
+    dispatch(setEditMode(mode))
+  } 
+
+  // Action button styling
+  const actionButtonSize = 24*getDeviceNormFactor()
+  const createActionColor = DefaultPallete.stopButton
+  const deleteActionColor = DefaultPallete.playButton
+
+  return (
+    <View style={ DefaultStyling.screen }>
+
+      <View style={styles.menu_container}>
+        <View style={ styles.action_buttons_container }>
+          {/* Action Menu is from Top to Bottom: 1. New Ring, 2. Delete Ring, 3. New Pulse, 4. Delete Pulse */}
+          <TwoItemButton 
+            item1={<AntDesign name="pluscircleo" size={actionButtonSize} color={createActionColor}/>} 
+            item2={<Text style={styles.button_text}>Add Ring</Text>}
+            onPress={() => setMode("new_ring")} containerStyle={styles.action_button}
+          />
+          <TwoItemButton 
+            item1={<AntDesign name="minuscircleo" size={actionButtonSize} color={deleteActionColor}/>} 
+            item2={<Text style={styles.button_text}>Del Ring</Text>}
+            onPress={() => setMode("del_ring")} containerStyle={styles.action_button}
+          />
+          <TwoItemButton 
+            item1={<AntDesign name="pluscircle" size={actionButtonSize} color={createActionColor}/>} 
+            item2={<Text style={styles.button_text}>Add Pulse</Text>}
+            onPress={() => setMode("new_pulse")} containerStyle={styles.action_button}
+          />
+          <TwoItemButton 
+            item1={<AntDesign name="minuscircle" size={actionButtonSize} color={deleteActionColor}/>} 
+            item2={<Text style={styles.button_text}>Del Pulse</Text>}
+            onPress={() => setMode("del_pulse")} containerStyle={styles.action_button}
+          />
+        </View>
       </View>
-    );
+
+      <RhythmVisualizer rhythm={rhythm} clockhandIdx={onBeat} 
+        containerStyle={styles.visualizer_container}/>
+
+      <PlayButton 
+        onPressPlay={startGame}
+        onPressStop={stopGame}
+        isPlaying={ isPlaying }
+      />      
+      
+      {/* acts as bottom padding for playbutton */}
+      <View style={{height: "3%"}}/> 
+
+    </View>
+  );
 }
 
 // Connect View to Redux store
 const mapStateToProps = (state, props) => {
   return { 
     isPlaying: state.isPlaying,
+    rhythm: state.selectedRhythm,
+    bpm: state.bpm
   }
 }
 HomeScreen = connect(mapStateToProps)(HomeScreen)
@@ -91,32 +117,40 @@ const HomeStack = createStackNavigator();
 export function HomeStackScreen() {
   return (
     <HomeStack.Navigator>
-      <HomeStack.Screen name="Rhythm Rings" component={HomeScreen} />
+      <HomeStack.Screen name="RHYTHM" component={HomeScreen} />
     </HomeStack.Navigator>
   );
 }
 
 const styles = StyleSheet.create({
-    select_menu_container: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        height: getDeviceHeight() / 10,
-        width: getDeviceWidth() * 1/GOLDEN_RATIO,
-    },
-    select_menu_text: {
-
-    },
-    play_menu_container: {
-        height: getDeviceHeight() / 10,
-        width: getDeviceWidth(),
-        backgroundColor: LBG2,
-    },
     action_buttons_container: {
-      height: 48,
+      flex: 1,
       flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: LBG2,
-      justifyContent: 'space-around',
+      alignContent: 'center',
+      justifyContent: 'space-between',
+      padding: 10,
+      paddingTop: 15,
     },
-    action_button: {},
+    button_text: {
+      color: DefaultPallete.buttonText,
+      fontSize: 12 * getDeviceNormFactor(),
+    },
+    action_button: {
+    },
+
+    menu_container: {
+      height: "10%",
+      width: "100%",
+      backgroundColor: DefaultPallete.menuBackground,
+    },
+
+    // Rhythm Visualizer
+    visualizer_container: {
+      flex: 1,
+      width: '95%', // %5 acts as horizontal margin
+      marginVertical: "2.5%",
+      
+    // NOTE: inner content is done with absolute positioning due to animation
+    },
+    
 })
