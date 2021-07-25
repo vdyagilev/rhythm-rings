@@ -1,5 +1,5 @@
 import { DEFAULT_RHYTHM } from "../data_structures/RhythmLibrary";
-import { SET_BPM, SET_EDIT_MODE, SET_IS_PLAYING } from './Actions';
+import { SET_BPM, SET_EDIT_MODE, SET_IS_PLAYING, SET_SELECTED_RHYTHM } from './Actions';
 
 const initialState = {
     isPlaying: false,   
@@ -27,6 +27,11 @@ export default (state = initialState, action) => {
                 ...state, bpm: action.bpm
             }
         
+        case SET_SELECTED_RHYTHM:
+            return {
+                ...state, selectedRhythm: action.rhythm
+            }
+
         default:
             return state
     }

@@ -15,3 +15,9 @@ export const setBPM = (bpm) => ({
     type: SET_BPM,
     bpm: bpm
 })
+
+export const SET_SELECTED_RHYTHM = "SET_SELECTED_RHYTHM"
+export const setSelectedRhythm = (rhythm) => ({
+    type: SET_SELECTED_RHYTHM,
+    rhythm: rhythm
+})

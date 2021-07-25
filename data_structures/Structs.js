@@ -30,7 +30,8 @@ export class Ring {
     addPulses(indexes, pulse) {
     // Add the same pulse onto indexes
         for (let i=0; i<indexes.length;i++){
-            this.addPulse(pulse)
+            const index = indexes[i]
+            this.addPulse(index, pulse)
         }
 
     }

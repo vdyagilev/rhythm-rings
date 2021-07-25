@@ -2,7 +2,7 @@ import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Audio } from 'expo-av';
 import * as React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { connect } from 'react-redux';
 import { REST_VALUE } from '../data_structures/Structs';
 import { bpmToMilli, getActivePulses, getDeviceNormFactor, loopIncrement, playPulses } from '../Helpers';
@@ -11,6 +11,7 @@ import { PlayButton, TwoItemButton } from '../ui/Buttons';
 import { DefaultPallete } from '../ui/Colors';
 import { RhythmVisualizer } from '../ui/Visualizer';
 import { DefaultStyling } from './Styles';
+import { ChooseRhythmScreen } from './ChooseRhythmScreen'
 
 
 class _HomeScreen extends React.Component {  
@@ -21,6 +22,8 @@ class _HomeScreen extends React.Component {
       onBeat: 0,
       timerID: -1,
       sounds: [],
+
+      showChooseRhythmScreen: false, // launch ChooseRhythmScreen as modal
     }
   }
   
@@ -111,10 +114,6 @@ class _HomeScreen extends React.Component {
       // play sounds on current beat
       const pulsesHappening = getActivePulses(this.props.rhythm.rings, this.state.onBeat)
       this.playPulses(pulsesHappening)
-
-      // console.log('tick', this.state.onBeat)
-      // console.log(pulsesHappening.map(p => p.sound))
-      // console.log(this.state.sounds.length)
     }
     
     // save timer fn id
@@ -127,6 +126,9 @@ class _HomeScreen extends React.Component {
     this.setState({timerID: -1})
   }
 
+  toggleChooseRhythmScreenModal() {
+    this.setState({showChooseRhythmScreen: !this.state.showChooseRhythmScreen})
+  }
 
   render() {
     // Action button styling
@@ -168,10 +170,10 @@ class _HomeScreen extends React.Component {
         <View style={styles.info_container}>
           <View style={{flexDirection: 'row', alignSelf: 'flex-start', flex: 1}}>
             <TouchableOpacity onPress={() => {}}>
-              <AntDesign name="addfile" size={24} color="black" />
+              <AntDesign name="addfile" size={24*getDeviceNormFactor()} color="black" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => {}}>
-              <Ionicons name="library-outline" size={24} color="black" />
+            <TouchableOpacity onPress={this.toggleChooseRhythmScreenModal.bind(this)}>
+              <Ionicons name="library-outline" size={24*getDeviceNormFactor()} color="black" />
             </TouchableOpacity>
           </View>
 
@@ -189,6 +191,21 @@ class _HomeScreen extends React.Component {
         
         {/* acts as bottom padding for playbutton */}
         <View style={{height: "3%"}}/> 
+
+        {/* *********** ChooseRhythmScreen Modal *************/}
+
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={this.state.showChooseRhythmScreen}
+          onRequestClose={this.toggleChooseRhythmScreenModal.bind(this)}
+        >
+
+          <ChooseRhythmScreen onClose={this.toggleChooseRhythmScreenModal.bind(this)} />
+
+        </Modal>
+
+        {/* *********** ChooseRhythmScreen Modal *************/}
 
       </View>
     );
@@ -254,7 +271,7 @@ const styles = StyleSheet.create({
     },
 
     rhythm_name: {
-      fontSize: 16
+      fontSize: 16*getDeviceNormFactor()
     },
     
 })

@@ -178,8 +178,8 @@ export function buildRhythmFromJson(json) {
         const ringJson = json.rings[i]
         // create struct objs from the json 
         const ring = new Ring(length, createRestBeats(length), ringJson.ringColor)
-        const pulse = new Pulse(ring.pulseVolume, ring.sound, ring.pulseColor)
-        ring.addPulses(json.pulses, pulse)
+        const pulse = new Pulse(ringJson.pulseVolume, ringJson.sound, ringJson.pulseColor)
+        ring.addPulses(ringJson.pulses, pulse)
 
         rings.push(ring)
     }   
@@ -189,5 +189,26 @@ export function buildRhythmFromJson(json) {
 
 export const RHYTHM_LIBRARY = RhythmsJson.map(json => buildRhythmFromJson(json))
 
+// HERE ARE CATEGORIES THAT EACH RHYTM BELONGS IN (CATEGORIES BY POSITION INDEX)
+export const RHYTHM_LIBRARY_CATEGORIES = [
+    {name: "Breakbeat", startIdx: 0, endIdx: 10}
+]
 
-export const DEFAULT_RHYTHM = RHYTHM_BILLIE_JEAN
+export const DEFAULT_RHYTHM = RHYTHM_LIBRARY[0]
+
+// Each rhythm is categoriezed by its position in the RHYTHM_LIBRARY list
+export function getRhythmCategory(rhythm){
+    const libraryPos = RHYTHM_LIBRARY.indexOf(rhythm)
+    const categories = RHYTHM_LIBRARY_CATEGORIES
+    if (libraryPos == -1) {
+        console.log('ERROR: UNCATEGORIZED RHYTHM ')
+    }
+
+    for (let i=0; i<categories.length;i++) {
+        const cat = categories[i]
+        if (libraryPos < cat.endIdx && libraryPos > cat.startIdx) {
+            // located category
+            return cat.name
+        }
+    }
+}

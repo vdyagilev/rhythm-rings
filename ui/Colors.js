@@ -11,6 +11,8 @@ export const DefaultPallete = {
     border: "#B0BEC5",
     title: "#455A64",
 
+    textButton: "#03A9F4",
+
     playButton: "#43A047",
     stopButton: "#D50000",
     playButtonText: "#FAFAFA",
@@ -25,6 +27,9 @@ export const DefaultPallete = {
     pulseOffbeat: "#FFA726",
 
     clockHand: "#EC407A",
+
+    selectedItemContainer: "#FFCCBC",
+    unselectedItemContainer: "#FAFAFA",
 
     // used as default colors for styling pulses etc.
     jerryGarcia: "#D81B60",
