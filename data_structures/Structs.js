@@ -1,4 +1,3 @@
-import { DEFAULT_PULSE_OFFBEAT_COLOR, DEFAULT_PULSE_ONBEAT_COLOR, DEFAULT_PULSE_ONBEAT_SOUND, DEFAULT_PULSE_VOLUME, DEFAULT_RING_COLOR, DEFAULT_RING_COLOR_ALT } from "./RhythmLibrary"
 
 export class Pulse {
     constructor(volume, sound, color) {
@@ -33,8 +32,9 @@ export class Ring {
 }
 
 export class Rhythm {
-    constructor(rings, length) {
+    constructor(rings, length, name) {
         this.rings = rings
         this.length = length
+        this.name = name
     }
 }

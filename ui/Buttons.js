@@ -1,6 +1,6 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { getDeviceNormFactor, getScreenWidth } from '../Helpers';
 import { DefaultPallete } from './Colors';
 
@@ -22,9 +22,9 @@ export function PlayButton(props) {
   }
 
   return (
-    <Pressable style={[styles.play_button, {backgroundColor: backgroundColor}]} onPress={onPress}>
+    <TouchableOpacity style={[styles.play_button, {backgroundColor: backgroundColor}]} onPress={onPress}>
       { buttonIcon }
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 
@@ -33,12 +33,12 @@ export function TwoItemButton(props) {
   const { item1, item2, onPress, containerStyle} = props;
 
   return (
-    <Pressable style={[styles.icon_text_button,  containerStyle]} onPress={onPress}>
+    <TouchableOpacity style={[styles.icon_text_button,  containerStyle]} onPress={onPress}>
       <View style={{flex: 1,  alignItems: 'center', justifyContent: 'space-between',}}>
         {item1}
         {item2}
       </View>
-    </Pressable>
+    </TouchableOpacity>
   );
 }
 

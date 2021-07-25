@@ -34,8 +34,6 @@ function rhythmVisualizer(props) {
     const ringCenter = {X: ringLeft + RING_INNERMOST_DIST, Y: ringTop + RING_INNERMOST_DIST}
 
     const clockhandTipXY = getPosOnCircle(length, clockhandIdx, firstPos, ringCenter)
-    
-    console.log(length, clockhandIdx, firstPos, ringCenter)
 
     return (
         <View style={[containerStyle, {}]}>

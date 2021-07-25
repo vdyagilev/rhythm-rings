@@ -2,7 +2,7 @@ import { AntDesign } from '@expo/vector-icons';
 import { createStackNavigator } from '@react-navigation/stack';
 import * as React from 'react';
 import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { connect } from 'react-redux';
 import { bpmToMilli, getDeviceNormFactor, loopIncrement } from '../Helpers';
 import { setEditMode, setIsPlaying } from '../storage/Actions';
@@ -11,95 +11,123 @@ import { DefaultPallete } from '../ui/Colors';
 import { RhythmVisualizer } from '../ui/Visualizer';
 import { DefaultStyling } from './Styles';
 
+import { Ionicons } from '@expo/vector-icons';
 
 
-function HomeScreen({ navigation, dispatch, isPlaying, rhythm, bpm}) {  
-  // Manage rhythmic clock rotation at BPM update rate
-  const [onBeat, setOnBeat] = React.useState(0)
-  const [timerFunc, setTimerFunc] = React.useState(null)
-  
 
-  useEffect(() => {
-    if (timerFunc && isPlaying) {
-      // We have come here after a timerFunc refresh (clocktick), and
-      // we must launch another one!
-      tick()
-
+class _HomeScreen extends React.Component {  
+  // { navigation, dispatch, isPlaying, rhythm, bpm} = props
+  constructor(props) {
+    super(props)
+    this.state = {
+      onBeat: 0,
+      timerID: -1,
     }
-  })
+  }
 
-  const tick = () => {
-    // set timer to tick forward intervallically
-    const timerID = setTimeout(() => {setOnBeat( loopIncrement(onBeat, rhythm.length-1) )}, bpmToMilli(bpm))
-    setTimerFunc(timerID)
+  componentWillUnmount() {
+    // stop ticking forward
+    this.clearTimer()
   }
 
   // Play button actions
-  const startGame = () => {
-    dispatch(setIsPlaying(true))
-
-    tick()
+  startGame() {
+    this.props.dispatch(setIsPlaying(true))
+    this.tick()
   }
 
-  const stopGame = () => {
-    dispatch(setIsPlaying(false))
-
-    clearTimeout(timerFunc)
-    setTimerFunc(null)
+  stopGame() {
+    this.props.dispatch(setIsPlaying(false))
+    this.clearTimer()
   }
 
-  const setMode = (mode) => {
-    dispatch(setEditMode(mode))
+  setMode(mode) {
+    this.props.dispatch(setEditMode(mode))
   } 
 
-  // Action button styling
-  const actionButtonSize = 24*getDeviceNormFactor()
-  const createActionColor = DefaultPallete.stopButton
-  const deleteActionColor = DefaultPallete.playButton
+  // Moving forward in time 
+  tick() {
+    // fn to update tick +1
+    const nextTick = () => {
+      this.setState({onBeat: loopIncrement(this.state.onBeat, this.props.rhythm.length-1)})
+    }
+    
+    // save timer fn id
+    const timerID = setInterval(nextTick, bpmToMilli(this.props.bpm))
+    this.setState({timerID: timerID})
+  }
 
-  return (
-    <View style={ DefaultStyling.screen }>
+  clearTimer() {
+    clearInterval(this.state.timerID)
+    this.setState({timerID: -1})
+  }
 
-      <View style={styles.menu_container}>
-        <View style={ styles.action_buttons_container }>
-          {/* Action Menu is from Top to Bottom: 1. New Ring, 2. Delete Ring, 3. New Pulse, 4. Delete Pulse */}
-          <TwoItemButton 
-            item1={<AntDesign name="pluscircleo" size={actionButtonSize} color={createActionColor}/>} 
-            item2={<Text style={styles.button_text}>Add Ring</Text>}
-            onPress={() => setMode("new_ring")} containerStyle={styles.action_button}
-          />
-          <TwoItemButton 
-            item1={<AntDesign name="minuscircleo" size={actionButtonSize} color={deleteActionColor}/>} 
-            item2={<Text style={styles.button_text}>Del Ring</Text>}
-            onPress={() => setMode("del_ring")} containerStyle={styles.action_button}
-          />
-          <TwoItemButton 
-            item1={<AntDesign name="pluscircle" size={actionButtonSize} color={createActionColor}/>} 
-            item2={<Text style={styles.button_text}>Add Pulse</Text>}
-            onPress={() => setMode("new_pulse")} containerStyle={styles.action_button}
-          />
-          <TwoItemButton 
-            item1={<AntDesign name="minuscircle" size={actionButtonSize} color={deleteActionColor}/>} 
-            item2={<Text style={styles.button_text}>Del Pulse</Text>}
-            onPress={() => setMode("del_pulse")} containerStyle={styles.action_button}
-          />
+
+  render() {
+    // Action button styling
+    const actionButtonSize = 24*getDeviceNormFactor()
+    const createActionColor = DefaultPallete.stopButton
+    const deleteActionColor = DefaultPallete.playButton
+
+    const { navigation, dispatch, isPlaying, rhythm, bpm} = this.props
+
+    return (
+      <View style={ DefaultStyling.screen }>
+
+        <View style={styles.menu_container}>
+          <View style={ styles.action_buttons_container }>
+            {/* Action Menu is from Top to Bottom: 1. New Ring, 2. Delete Ring, 3. New Pulse, 4. Delete Pulse */}
+            <TwoItemButton 
+              item1={<AntDesign name="pluscircleo" size={actionButtonSize} color={createActionColor}/>} 
+              item2={<Text style={styles.button_text}>Add Ring</Text>}
+              onPress={this.setMode.bind(this,"new_ring")} containerStyle={styles.action_button}
+            />
+            <TwoItemButton 
+              item1={<AntDesign name="minuscircleo" size={actionButtonSize} color={deleteActionColor}/>} 
+              item2={<Text style={styles.button_text}>Del Ring</Text>}
+              onPress={this.setMode.bind(this,"del_ring")} containerStyle={styles.action_button}
+            />
+            <TwoItemButton 
+              item1={<AntDesign name="pluscircle" size={actionButtonSize} color={createActionColor}/>} 
+              item2={<Text style={styles.button_text}>Add Pulse</Text>}
+              onPress={this.setMode.bind(this,"new_pulse")} containerStyle={styles.action_button}
+            />
+            <TwoItemButton 
+              item1={<AntDesign name="minuscircle" size={actionButtonSize} color={deleteActionColor}/>} 
+              item2={<Text style={styles.button_text}>Del Pulse</Text>}
+              onPress={this.setMode.bind(this,"del_pulse")} containerStyle={styles.action_button}
+            />
+          </View>
         </View>
+
+        <View style={styles.info_container}>
+          <View style={{flexDirection: 'row', alignSelf: 'flex-start', flex: 1}}>
+            <TouchableOpacity onPress={() => {}}>
+              <AntDesign name="addfile" size={24} color="black" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => {}}>
+              <Ionicons name="library-outline" size={24} color="black" />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.rhythm_name}>{rhythm.name}</Text>
+        </View>
+
+        <RhythmVisualizer rhythm={rhythm} clockhandIdx={ this.state.onBeat } 
+          containerStyle={styles.visualizer_container}/>
+
+        <PlayButton 
+          onPressPlay={ this.startGame.bind(this) }
+          onPressStop={ this.stopGame.bind(this) }
+          isPlaying={ isPlaying }
+        />      
+        
+        {/* acts as bottom padding for playbutton */}
+        <View style={{height: "3%"}}/> 
+
       </View>
-
-      <RhythmVisualizer rhythm={rhythm} clockhandIdx={onBeat} 
-        containerStyle={styles.visualizer_container}/>
-
-      <PlayButton 
-        onPressPlay={startGame}
-        onPressStop={stopGame}
-        isPlaying={ isPlaying }
-      />      
-      
-      {/* acts as bottom padding for playbutton */}
-      <View style={{height: "3%"}}/> 
-
-    </View>
-  );
+    );
+  }
 }
 
 // Connect View to Redux store
@@ -110,7 +138,7 @@ const mapStateToProps = (state, props) => {
     bpm: state.bpm
   }
 }
-HomeScreen = connect(mapStateToProps)(HomeScreen)
+HomeScreen = connect(mapStateToProps)(_HomeScreen)
 
 const HomeStack = createStackNavigator();
 
@@ -143,6 +171,13 @@ const styles = StyleSheet.create({
       width: "100%",
       backgroundColor: DefaultPallete.menuBackground,
     },
+    info_container: {
+      flexDirection: 'row',
+      width: '100%', 
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 10,
+    },
 
     // Rhythm Visualizer
     visualizer_container: {
@@ -151,6 +186,10 @@ const styles = StyleSheet.create({
       marginVertical: "2.5%",
       
     // NOTE: inner content is done with absolute positioning due to animation
+    },
+
+    rhythm_name: {
+      fontSize: 16
     },
     
 })
