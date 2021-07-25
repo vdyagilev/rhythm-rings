@@ -30,7 +30,10 @@ function rhythmVisualizer(props) {
     const playButtonHeight = getViewHeight()*(0.03)+40 + (20 * getDeviceNormFactor()) // padding
     const ringTop = vertMidpoint - RING_INNERMOST_DIST - 1.8*playButtonHeight 
 
-    const firstPos = {X: ringLeft + RING_INNERMOST_DIST, Y: ringTop - (RING_INNERMOST_DIST/2)}
+    const firstPos = {
+        X: ringLeft + RING_INNERMOST_DIST, 
+        Y: ringTop + (rings.length+1)*(RING_WIDTH+RING_SHIFT_DIST)
+    }
     const ringCenter = {X: ringLeft + RING_INNERMOST_DIST, Y: ringTop + RING_INNERMOST_DIST}
 
     const clockhandTipXY = getPosOnCircle(length, clockhandIdx, firstPos, ringCenter)

@@ -1,18 +1,16 @@
-import { AntDesign } from '@expo/vector-icons';
+import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { createStackNavigator } from '@react-navigation/stack';
+import { Audio } from 'expo-av';
 import * as React from 'react';
-import { useEffect } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { connect } from 'react-redux';
-import { bpmToMilli, getDeviceNormFactor, loopIncrement } from '../Helpers';
+import { REST_VALUE } from '../data_structures/Structs';
+import { bpmToMilli, getActivePulses, getDeviceNormFactor, loopIncrement, playPulses } from '../Helpers';
 import { setEditMode, setIsPlaying } from '../storage/Actions';
 import { PlayButton, TwoItemButton } from '../ui/Buttons';
 import { DefaultPallete } from '../ui/Colors';
 import { RhythmVisualizer } from '../ui/Visualizer';
 import { DefaultStyling } from './Styles';
-
-import { Ionicons } from '@expo/vector-icons';
-
 
 
 class _HomeScreen extends React.Component {  
@@ -22,14 +20,68 @@ class _HomeScreen extends React.Component {
     this.state = {
       onBeat: 0,
       timerID: -1,
+      sounds: [],
     }
   }
+  
+  // cache sounds func
+  async loadSounds() {
+    var loadedFiles = [] // used to not load duplicates 
+
+    var loadedSounds = []
+
+    const rings = this.props.rhythm.rings
+    for (let i=0; i<rings.length; i++) {
+      const ring = rings[i]
+      
+      for (let j=0; j<ring.beats.length; j++) {
+        const beat = ring.beats[j]
+
+        if (beat != REST_VALUE) {
+          const file = beat.sound
+
+          if (loadedFiles.indexOf(file) == -1) {
+            //  this is the first time, load file and add into keep-track-of-uniques log
+            loadedFiles.push(file)
+            const {sound} = await Audio.Sound.createAsync(file)
+
+            // add into sounds as easy-to-access file -> sound obj
+            const refObj = {file: file, sound: sound}
+
+            loadedSounds.push(refObj)
+          }
+        }
+      }
+    }
+    // save to state
+    this.setState({sounds: loadedSounds})
+  }
+
+  async unloadSounds() {
+    const sounds = this.state.sounds
+    for (let i=0; i<sounds.length; i++) {
+      sounds[i].sound.unloadAsync()
+    }
+
+    // save to state
+    this.setState({sounds: []})
+  }
+
+  componentDidMount() {
+    // Cache all sounds used in current rhythm
+    this.loadSounds()
+  }
+
 
   componentWillUnmount() {
     // stop ticking forward
     this.clearTimer()
+
+    // clear cached sounds
+    this.unloadSounds()
   }
 
+  
   // Play button actions
   startGame() {
     this.props.dispatch(setIsPlaying(true))
@@ -45,15 +97,28 @@ class _HomeScreen extends React.Component {
     this.props.dispatch(setEditMode(mode))
   } 
 
+  async playPulses(pulses) {
+    await playPulses(pulses, this.state.sounds)
+  }
+
   // Moving forward in time 
   tick() {
-    // fn to update tick +1
-    const nextTick = () => {
+    // fn to execute every tick (and move tick, make the sound, etc.)
+    const intervallicFunc = () => {
+      // update state to next beat
       this.setState({onBeat: loopIncrement(this.state.onBeat, this.props.rhythm.length-1)})
+      
+      // play sounds on current beat
+      const pulsesHappening = getActivePulses(this.props.rhythm.rings, this.state.onBeat)
+      this.playPulses(pulsesHappening)
+
+      // console.log('tick', this.state.onBeat)
+      // console.log(pulsesHappening.map(p => p.sound))
+      // console.log(this.state.sounds.length)
     }
     
     // save timer fn id
-    const timerID = setInterval(nextTick, bpmToMilli(this.props.bpm))
+    const timerID = setInterval(intervallicFunc, bpmToMilli(this.props.bpm))
     this.setState({timerID: timerID})
   }
 

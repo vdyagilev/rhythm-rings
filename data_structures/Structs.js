@@ -23,11 +23,23 @@ export class Ring {
         this.color = color
     }
     addPulse(index, pulse) {
+    // Add pulse onto index
         this.beats[index] = pulse
+    }
+
+    addPulses(indexes, pulse) {
+    // Add the same pulse onto indexes
+        for (let i=0; i<indexes.length;i++){
+            this.addPulse(pulse)
+        }
+
     }
 
     addRest(index) {
         this.beats[index] = this.restValue
+    }
+    getPulse(index) {
+        return this.beats[index]
     }
 }
 

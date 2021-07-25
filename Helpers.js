@@ -1,4 +1,6 @@
 import { Dimensions, PixelRatio } from 'react-native';
+import { REST_VALUE } from './data_structures/Structs';
+import { Audio } from 'expo-av';
 
 // Dynamic device dimensions
 export function getScreenWidth() { return Dimensions.get('screen').width }
@@ -29,3 +31,42 @@ export function bpmToMilli(bpm) {
 export function loopIncrement (currIdx, length) {
     return (currIdx == length) ? 0 : 1+currIdx
   }
+
+export function getActivePulses(rings, idx) {
+    // returns all pulses that are not rests on idx position of every ring list in rings
+    var activePulses = []
+    for (let i=0; i<rings.length; i++) {
+        const ring = rings[i]
+        const pulse = ring.getPulse(idx)
+        if (pulse != REST_VALUE) {
+            activePulses.push(pulse)
+        }
+    }
+    return activePulses
+}
+
+export async function playPulses(pulses, sounds) {
+
+    // load and play their sounds
+    for (let i=0; i<pulses.length; i++) {
+        const pulse = pulses[i] 
+        // grab loaded sound by pulse name
+        const sound = sounds.slice().filter(obj => obj.file == pulse.sound)[0].sound // note: make array copy by value, and we take the only element from a len 1 array
+        // play it!
+
+        // TODO: I've written caching code where sounds are held in HomeScreen state.sounds.
+        // Problem: each audio clip is only played once. But this goes away if we load it up from scratch each time
+        // Fix this to avoid memory leaks and lagg
+        
+        sound = (await Audio.Sound.createAsync(pulse.sound)).sound
+
+        await sound.playAsync()
+    }
+}
+
+export function rangeWithDisclude(start, end, excludeNums) {
+    const preNums = [...Array(start).keys()]
+    excludeNums = preNums.concat(excludeNums)
+    // filter out excludeNums
+    return [...Array(end).keys()].filter(n => excludeNums.indexOf(n) == -1)
+}
