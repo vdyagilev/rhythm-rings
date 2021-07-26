@@ -1,6 +1,6 @@
+import { Audio } from 'expo-av';
 import { Dimensions, PixelRatio } from 'react-native';
 import { REST_VALUE } from './data_structures/Structs';
-import { Video } from 'expo-av';
 
 // Dynamic device dimensions
 export function getScreenWidth() { return Dimensions.get('screen').width }
@@ -45,13 +45,31 @@ export function getActivePulses(rings, idx) {
     return activePulses
 }
 
-export async function playPulses(pulses, sounds) {
-
+export async function playPulses(pulses, sounds) {  
     const findSoundInCache = (soundFile) => {
-        var cacheSounds = sounds.slice()
-        cacheSounds = cacheSounds.filter(obj => obj.file == soundFile)
+        var cacheSounds = sounds
+
+        // look for not playing refObjs with this sound in cache
+        cacheSounds = cacheSounds.filter(obj => obj.file == soundFile )
+        cacheSounds = cacheSounds.filter(obj => !obj.isPlaying)
+
         if (cacheSounds.length > 0) {
-            return cacheSounds[0].sound
+            // found some avaliable sounds
+            const sound = cacheSounds[0]    
+            return sound
+        }
+
+    }
+
+    const markCacheSoundIsPlaying = (id, isPlaying) => {
+        var cacheSounds = sounds
+        // mutates ref obj prop in cache list
+        // find by id and update
+        for (let i=0; i<sounds.length; i++) {
+            if (cacheSounds[i].id == id) {
+                // found it, set property
+                cacheSounds[i].isPlaying = isPlaying
+            }
         }
     }
 
@@ -59,11 +77,16 @@ export async function playPulses(pulses, sounds) {
     for (let i=0; i<pulses.length; i++) {
         const pulse = pulses[i] 
         // grab loaded sound by pulse name
-        const sound = findSoundInCache(pulse.sound)
+        const { sound, id, file, isPlaying } = findSoundInCache(pulse.sound)
+
+        markCacheSoundIsPlaying(sound.id, true)
 
         // reset position of sound to 0 (MUST BE DONE OR DOESNT PLAY!)
+        sound.setPositionAsync(0)
         // play sound
-        sound.setPositionAsync(0).then(() => sound.playAsync())
+        .then(() => sound.playAsync())
+        // mark sound as finished playing in cache ref obj
+        .then(() => markCacheSoundIsPlaying(sound.id, false))
     }
 }
 

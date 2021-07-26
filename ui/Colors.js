@@ -5,15 +5,19 @@
 // Default color pallete
 export const DefaultPallete = {
     background: "#ECEFF1",
-    menuBackground: "#B0BEC5",
+    menuBackground: "#CFD8DC",
     tabBar: "#FAFAFA",
     tabBarText: "#BBDEFB",
     border: "#B0BEC5",
     title: "#455A64",
+    rhythmName: "#455A64",
+
     loadingIndicator: "#673AB7",
+
     popupMenu: "#FFAB91",
 
     textButton: "#03A9F4",
+    iconButton: "#303F9F",
 
     playButton: "#43A047",
     stopButton: "#D50000",
@@ -33,8 +37,9 @@ export const DefaultPallete = {
     selectedItemContainer: "#FFCCBC",
     unselectedItemContainer: "#FAFAFA",
 
-    caretUp: "#66BB6A",
-    caretDown: "#D32F2F",
+    caretUp: "#4FC3F7",
+    caretDown: "#A5D6A7",
+    bpm: "#4527A0",
 
     // used as default colors for styling pulses etc.
     jerryGarcia: "#D81B60",

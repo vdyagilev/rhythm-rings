@@ -25,7 +25,7 @@ function rhythmVisualizer(props) {
 
     // calculate position of clockhand tip (what beat its on)
     const horizMidpoint = getViewWidth()/2
-    const vertMidpoint = getViewHeight()/2
+    const vertMidpoint = (getViewHeight())/2
     const ringLeft = horizMidpoint - RING_INNERMOST_DIST - RING_WIDTH
     const playButtonHeight = getViewHeight()*(0.03)+40 + (20 * getDeviceNormFactor()) // padding
     const ringTop = vertMidpoint - RING_INNERMOST_DIST - 1.8*playButtonHeight 
@@ -39,8 +39,12 @@ function rhythmVisualizer(props) {
     var clockhandTipXY = getPosOnCircle(length, (length/2) + clockhandIdx, firstPos, ringCenter)
 
     return (
-        <View style={[containerStyle, {}]}>
+        <View style={[containerStyle,]}>
+            {/* the -15% marginTop will center the visualizer inside parent */}
+            <View style={{marginTop: '-15%'}}> 
+
             { drawnRings.reverse() }
+            </View>
 
             <Svg height="100%" width="100%">
                 <Line 
@@ -58,8 +62,8 @@ function RingView(props) {
 
     // calculate absolute position to draw (left, top coord)
     const horizMidpoint = getViewWidth()/2
-    const vertMidpoint = getViewHeight()/2
-    
+    const vertMidpoint = getViewHeight()/2 
+
     const ringLeft = horizMidpoint - radius - width
     const playButtonHeight = getViewHeight()*(0.03)+40 + (20 * getDeviceNormFactor()) // padding
     const ringTop = vertMidpoint - radius - 1.8*playButtonHeight 

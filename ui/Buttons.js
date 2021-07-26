@@ -127,7 +127,7 @@ class _SetBPMButton extends React.Component {
     return (
       <View style={styles.bpm_button}>
         <TouchableOpacity onPress={this.updateBPMAdd.bind(this, 1)} onPressIn={this.startGrow.bind(this)} onPressOut={this.stop.bind(this)}>
-          <AntDesign name="caretup" size={16 * getDeviceNormFactor()} color="black" />
+          <AntDesign name="caretup" size={20 * getDeviceNormFactor()} color={DefaultPallete.caretUp} />
         </TouchableOpacity>
 
         <TextInput 
@@ -136,7 +136,7 @@ class _SetBPMButton extends React.Component {
         </TextInput>
 
         <TouchableOpacity onPress={this.updateBPMAdd.bind(this, -1)} onPressIn={this.startShrink.bind(this)} onPressOut={this.stop.bind(this)}>
-          <AntDesign name="caretdown" size={16 * getDeviceNormFactor()} color="black" />
+          <AntDesign name="caretdown" size={20 * getDeviceNormFactor()} color={DefaultPallete.caretDown} />
         </TouchableOpacity>
       </View>
   )}
@@ -174,6 +174,8 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   bpm_text: {
-
+    color: DefaultPallete.bpm,
+    fontWeight: '600',
+    fontSize: 18 * getDeviceNormFactor()
   },
 });

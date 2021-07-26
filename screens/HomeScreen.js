@@ -2,10 +2,10 @@ import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Audio } from 'expo-av';
 import * as React from 'react';
-import { Modal, Text, TouchableOpacity, View, StyleSheet, ActivityIndicator } from 'react-native';
+import { Modal, Text, TouchableOpacity, View, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { connect } from 'react-redux';
 import { REST_VALUE } from '../data_structures/Structs';
-import { bpmToMilli, getActivePulses, getDeviceNormFactor, loopIncrement, playPulses } from '../Helpers';
+import { bpmToMilli, getActivePulses, getDeviceNormFactor, getScreenHeight, loopIncrement, playPulses } from '../Helpers';
 import { setEditMode, setIsPlaying } from '../storage/Actions';
 import { PlayButton, SetBPMButton, TwoItemButton } from '../ui/Buttons';
 import { DefaultPallete } from '../ui/Colors';
@@ -13,6 +13,12 @@ import { RhythmVisualizer } from '../ui/Visualizer';
 import { DefaultStyling } from './Styles';
 import { ChooseRhythmScreen } from './ChooseRhythmScreen'
 
+
+// TODO: have sounds play simultenously https://forums.expo.io/t/how-to-play-one-sound-file-simultaneously-polyphonically-play-a-sound/54917
+
+// each sound loaded by expo-av is duplicated
+// so that we can play the sound polyphonically
+export const NUM_REFS_TO_SOUND = 1 // TODO:
 
 class _HomeScreen extends React.Component {  
   // { navigation, dispatch, isPlaying, rhythm, bpm} = props
@@ -52,12 +58,19 @@ class _HomeScreen extends React.Component {
           if (loadedFiles.indexOf(file) == -1) {
             //  this is the first time, load file and add into keep-track-of-uniques log
             loadedFiles.push(file)
-            const {sound} = await Audio.Sound.createAsync(file)
 
             // add into sounds as easy-to-access file -> sound obj
-            const refObj = {file: file, sound: sound}
 
-            loadedSounds.push(refObj)
+            // create multiple copies of the sound so we can play it polyphonically
+            for (let x=0; x<NUM_REFS_TO_SOUND; x++) {
+              const refObj = {
+                id: x, 
+                file: file, 
+                sound: (await Audio.Sound.createAsync(file)).sound, 
+                isPlaying: false
+              }
+              loadedSounds.push(refObj)
+            }            
           }
         }
       }
@@ -65,7 +78,7 @@ class _HomeScreen extends React.Component {
     // save to state
     this.setState({sounds: loadedSounds})
     // done loading, set indicator to false!
-    this.setState({isLoading: false})
+    this.setState({isLoading: false}) 
   }
 
   async unloadSounds() {
@@ -117,7 +130,7 @@ class _HomeScreen extends React.Component {
       
       // play sounds on current beat
       const pulsesHappening = getActivePulses(this.props.rhythm.rings, this.state.onBeat)
-      playPulses(pulsesHappening, this.state.sounds)
+      playPulses.bind(this)(pulsesHappening, this.state.sounds)
     }
     
     // save timer fn id
@@ -130,16 +143,46 @@ class _HomeScreen extends React.Component {
     this.setState({timerID: -1})
   }
 
-  async toggleChooseRhythmScreenModal() {
+  async openChooseRhythmScreenModal() {
     // stop playing and reset onBeat to 0 
     this.stopGame()
     this.setState({onBeat: 0})
 
+    // show modal
+    this.setState({showChooseRhythmScreen: true})
+  }
+
+  async closeChooseRhythmScreenModal() {
     // load new sounds
     this.loadSounds()
 
     // hide modal
-    this.setState({showChooseRhythmScreen: !this.state.showChooseRhythmScreen})
+    this.setState({showChooseRhythmScreen: false})
+  }
+
+  async toggleChooseRhythmScreenModal() {
+    if (this.state.showChooseRhythmScreen) {
+      this.closeChooseRhythmScreenModal()
+    } else {
+      this.openChooseRhythmScreenModal()
+    }
+  }
+
+  onPressSaveFile() {
+    // open alert to save custom rhythm with a name
+    
+    Alert.prompt(
+      "Save your Rhythm",
+      "What should we call it?",
+      [
+        {
+          text: "Cancel",
+          onPress: () => {},
+          style: "cancel"
+        },
+        { text: "OK", onPress: () => { }}// TODO:  } }
+      ]
+    );
   }
 
   render() {
@@ -161,6 +204,38 @@ class _HomeScreen extends React.Component {
 
     return (
       <View style={ DefaultStyling.screen }>
+
+        <View style={styles.info_container}>
+          <View style={{ justifyContent: 'space-evenly', alignSelf: 'flex-start', alignItems: 'center', }}>
+            <TouchableOpacity style={[styles.iconButton, {paddingBottom: 10, marginLeft: -5}]} onPress={ this.onPressSaveFile.bind(this) }>
+              <AntDesign name="addfile" size={28 * getDeviceNormFactor()} color={DefaultPallete.iconButton} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton} onPress={ this.toggleChooseRhythmScreenModal.bind(this) }>
+              <Ionicons name="library-outline" size={28 * getDeviceNormFactor()} color={DefaultPallete.iconButton} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.rhythm_name}>{rhythm.name}</Text>
+
+
+          <View style={{alignItems:'center'}}>
+            <SetBPMButton />
+            <Text style={styles.bpmTitle}>BPM</Text>
+          </View>
+
+        </View>
+
+        <RhythmVisualizer rhythm={rhythm} clockhandIdx={ this.state.onBeat } 
+          containerStyle={styles.visualizer_container}/>
+
+        <PlayButton 
+          onPressPlay={ this.startGame.bind(this) }
+          onPressStop={ this.stopGame.bind(this) }
+          isPlaying={ isPlaying }
+        />      
+        
+        {/* acts as bottom padding for playbutton */}
+        <View style={{height: "3%"}}/> 
 
         <View style={styles.menu_container}>
           <View style={ styles.action_buttons_container }>
@@ -187,34 +262,6 @@ class _HomeScreen extends React.Component {
             />
           </View>
         </View>
-
-        <View style={styles.info_container}>
-          <View style={{flexDirection: 'row', alignSelf: 'flex-start'}}>
-            <TouchableOpacity onPress={() => {}}>
-              <AntDesign name="addfile" size={24*getDeviceNormFactor()} color="black" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={this.toggleChooseRhythmScreenModal.bind(this)}>
-              <Ionicons name="library-outline" size={24*getDeviceNormFactor()} color="black" />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.rhythm_name}>{rhythm.name}</Text>
-
-          <SetBPMButton />
-
-        </View>
-
-        <RhythmVisualizer rhythm={rhythm} clockhandIdx={ this.state.onBeat } 
-          containerStyle={styles.visualizer_container}/>
-
-        <PlayButton 
-          onPressPlay={ this.startGame.bind(this) }
-          onPressStop={ this.stopGame.bind(this) }
-          isPlaying={ isPlaying }
-        />      
-        
-        {/* acts as bottom padding for playbutton */}
-        <View style={{height: "3%"}}/> 
 
         {/* *********** ChooseRhythmScreen Modal *************/}
 
@@ -282,6 +329,8 @@ const styles = StyleSheet.create({
       width: '100%', 
       justifyContent: 'space-between',
       padding: 10,
+      alignItems: 'center',
+      backgroundColor: DefaultPallete.menuBackground,
     },
 
     // Rhythm Visualizer
@@ -289,12 +338,21 @@ const styles = StyleSheet.create({
       flex: 1,
       width: '95%', // %5 acts as horizontal margin
       marginVertical: "2.5%",
-      
+      // inside visualizer there is also some sizing properties
     // NOTE: inner content is done with absolute positioning due to animation
     },
 
     rhythm_name: {
-      fontSize: 16*getDeviceNormFactor()
+      fontSize: 18*getDeviceNormFactor(),
+      color: DefaultPallete.rhythmName,
+      fontWeight: '500',
     },
+    bpmTitle: {
+      fontSize: 10 * getDeviceNormFactor(),
+      color: DefaultPallete.rhythmName,
+      paddingTop: 5,
+    },
+    iconButton: {
+    }
     
 })
