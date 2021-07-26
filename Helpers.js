@@ -20,7 +20,7 @@ export function rotateAroundCentre(aroundXY, fromXY, radians) {
 }
 
 export function getPosOnCircle(ringLen, ringIdx, firstPos, centerPos) {
-    const rotateRadians = (2*Math.PI / ringLen) * ringIdx
+    const rotateRadians =  (2*Math.PI / ringLen) * ringIdx
     return rotateAroundCentre(centerPos, firstPos,  rotateRadians)
 }
 
@@ -46,8 +46,6 @@ export function getActivePulses(rings, idx) {
 }
 
 export async function playPulses(pulses, sounds) {
-    console.log("\nplayPulses debug: ")
-    console.log(pulses, sounds.length)
 
     const findSoundInCache = (soundFile) => {
         var cacheSounds = sounds.slice()
@@ -61,7 +59,6 @@ export async function playPulses(pulses, sounds) {
     for (let i=0; i<pulses.length; i++) {
         const pulse = pulses[i] 
         // grab loaded sound by pulse name
-        console.log(sounds.map(s => s.file))
         const sound = findSoundInCache(pulse.sound)
 
         // reset position of sound to 0 (MUST BE DONE OR DOESNT PLAY!)

@@ -34,6 +34,33 @@ export const DEFAULT_RING_COLOR = DefaultPallete.ring
 
 // *********** RHYTHM TEMPLATE ****************
 
+const DebuggerRhythm = {
+    name: "Debugger Rhythm",
+    rings: [
+        {
+            sound: DrumSounds.kick,
+            pulses: [0, 1],
+            ringColor: DefaultPallete.ring,
+            pulseColor: DefaultPallete.billKruetzmann,
+            pulseVolume: DEFAULT_PULSE_VOLUME
+        },
+        {
+            sound: DrumSounds.snare,
+            pulses: [2, 3],
+            ringColor: DefaultPallete.ring_alt,
+            pulseColor: DefaultPallete.pigpen,
+            pulseVolume: DEFAULT_PULSE_VOLUME/2
+        },
+        {
+            sound: DrumSounds.closedHat,
+            pulses: [1, 3],
+            ringColor: DefaultPallete.ring,
+            pulseColor: DefaultPallete.robertHunter,
+            pulseVolume: DEFAULT_PULSE_VOLUME/4
+        }
+    ],
+    length: 4,
+}
 
 // BREAKBEATS
 
@@ -194,14 +221,14 @@ export const RHYTHM_LIBRARY_CATEGORIES = [
     {name: "Breakbeat", startIdx: 0, endIdx: 10}
 ]
 
-export const DEFAULT_RHYTHM = RHYTHM_LIBRARY[0]
+export const DEFAULT_RHYTHM =  buildRhythmFromJson(DebuggerRhythm) //RHYTHM_LIBRARY[0]
 
 // Each rhythm is categoriezed by its position in the RHYTHM_LIBRARY list
 export function getRhythmCategory(rhythm){
     const libraryPos = RHYTHM_LIBRARY.indexOf(rhythm)
     const categories = RHYTHM_LIBRARY_CATEGORIES
     if (libraryPos == -1) {
-        console.log('ERROR: UNCATEGORIZED RHYTHM ')
+        console.log('ERROR: UNCATEGORIZED RHYTHM ***************************** \n\n\n\n\n ')
     }
 
     for (let i=0; i<categories.length;i++) {

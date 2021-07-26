@@ -20,7 +20,7 @@ function rhythmVisualizer(props) {
     const innerColor = DefaultPallete.background
     const drawnRings = rings.map((r, i) => 
         // Draw series of concentric rings, starting from innermost ring and extending outwards by shiftDist 
-        <RingView beats={r.beats} radius={(i * RING_SHIFT_DIST) + RING_INNERMOST_DIST} width={RING_WIDTH} ringColor={r.color} innerColor={innerColor}/>
+        <RingView key={i} beats={r.beats} radius={(i * RING_SHIFT_DIST) + RING_INNERMOST_DIST} width={RING_WIDTH} ringColor={r.color} innerColor={innerColor}/>
     )
 
     // calculate position of clockhand tip (what beat its on)
@@ -30,13 +30,15 @@ function rhythmVisualizer(props) {
     const playButtonHeight = getViewHeight()*(0.03)+40 + (20 * getDeviceNormFactor()) // padding
     const ringTop = vertMidpoint - RING_INNERMOST_DIST - 1.8*playButtonHeight 
 
+    const ringRight = horizMidpoint + RING_INNERMOST_DIST + RING_WIDTH
+
     const firstPos = {
         X: ringLeft + RING_INNERMOST_DIST, 
         Y: ringTop + (rings.length+1)*(RING_WIDTH+RING_SHIFT_DIST)
     }
     const ringCenter = {X: ringLeft + RING_INNERMOST_DIST, Y: ringTop + RING_INNERMOST_DIST}
 
-    var clockhandTipXY = getPosOnCircle(length, clockhandIdx, firstPos, ringCenter)
+    var clockhandTipXY = getPosOnCircle(length, (length/2) + clockhandIdx, firstPos, ringCenter)
 
     return (
         <View style={[containerStyle, {}]}>
@@ -67,12 +69,6 @@ function RingView(props) {
     // render pulses (every beat is either a rest or a pulse)
     const firstPulsePos = {X: radius, Y: PULSE_RADIUS/2-width/4}
     const ringCenter = {X: radius, Y: radius}
-    
-    // console.log("Ring Center: ", ringCenter)
-    // console.log("First Pulse Pos: ", firstPulsePos, "\n")
-    // console.log("RingLeft, Ring Top", ringLeft, ringTop)
-    // console.log("Screen width: ", getScreenWidth() )
-    // console.log("Window width: ", getViewWidth(), "\n\n\n")
 
     var pulses = []
     for (let beatIdx=0; beatIdx<beats.length; beatIdx++) {
@@ -81,6 +77,7 @@ function RingView(props) {
             const pulse = beats[beatIdx]
             const pulseView = (
             <PulseView 
+                key={beatIdx}
                 radius={PULSE_RADIUS} color={pulse.color}
                 rotateAroundXY={ringCenter} fromXY={firstPulsePos}
                 ringPos={beatIdx} ringLen={beats.length}

@@ -5,7 +5,7 @@ const initialState = {
     isPlaying: false,   
     editMode: null,
     selectedRhythm: DEFAULT_RHYTHM,
-    bpm: 116,
+    bpm: 80,
 }
 
 export default (state = initialState, action) => {
