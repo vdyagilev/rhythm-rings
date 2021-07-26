@@ -1,6 +1,6 @@
 import { Dimensions, PixelRatio } from 'react-native';
 import { REST_VALUE } from './data_structures/Structs';
-import { Audio } from 'expo-av';
+import { Video } from 'expo-av';
 
 // Dynamic device dimensions
 export function getScreenWidth() { return Dimensions.get('screen').width }
@@ -62,13 +62,11 @@ export async function playPulses(pulses, sounds) {
         const pulse = pulses[i] 
         // grab loaded sound by pulse name
         console.log(sounds.map(s => s.file))
-        //findSoundInCache(pulse.sound).playAsync()
-        // console.log(sounds.map(s => s.file))
-        // console.log("\n")
-        
-        // # TODO: use cahed sounds, but it was not playing more than once so temporarily brute force load ecah time
-        const x = (await Audio.Sound.createAsync(pulse.sound)).sound
-        x.playAsync()
+        const sound = findSoundInCache(pulse.sound)
+
+        // reset position of sound to 0 (MUST BE DONE OR DOESNT PLAY!)
+        // play sound
+        sound.setPositionAsync(0).then(() => sound.playAsync())
     }
 }
 
