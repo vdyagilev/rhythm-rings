@@ -1,12 +1,12 @@
-import React from 'react';
-import { View } from 'react-native';
+import React, { useState } from 'react';
+import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 import { connect } from 'react-redux';
 import { REST_VALUE } from '../data_structures/Structs';
-import { getDeviceNormFactor, getPosOnCircle, getViewHeight, getViewWidth, rotateAroundCentre } from '../Helpers';
-import { setOnBeat } from '../storage/Actions';
+import { getDeviceNormFactor, getPosOnCircle, getViewHeight, getViewWidth } from '../Helpers';
+import { DefaultStyling } from '../screens/Styles';
 import { DefaultPallete } from './Colors';
-import { CLOCKHAND_WIDTH, PULSE_RADIUS, RING_INNERMOST_DIST, RING_SHIFT_DIST, RING_WIDTH } from './Constants';
+import { CLOCKHAND_WIDTH, LONGPRESS_LENGTH, PULSE_RADIUS, RING_INNERMOST_DIST, RING_SHIFT_DIST, RING_WIDTH } from './Constants';
 import { CircleView } from './Shapes';
 
 // Visualizer for the game
@@ -36,7 +36,7 @@ function rhythmVisualizer(props) {
     }
     const ringCenter = {X: ringLeft + RING_INNERMOST_DIST, Y: ringTop + RING_INNERMOST_DIST}
 
-    const clockhandTipXY = getPosOnCircle(length, clockhandIdx, firstPos, ringCenter)
+    var clockhandTipXY = getPosOnCircle(length, clockhandIdx, firstPos, ringCenter)
 
     return (
         <View style={[containerStyle, {}]}>
@@ -111,6 +111,8 @@ function RingView(props) {
 }
 
 function PulseView(props) {
+    const [ menuVisible, setMenuVisible ] = useState(false)
+
     const { radius, color, rotateAroundXY, fromXY, ringPos, ringLen  } = props
 
     // calculate the absolute position of dot on the ring, by rotating around ring's centre
@@ -118,14 +120,80 @@ function PulseView(props) {
     const { X, Y } = getPosOnCircle(ringLen, ringPos, fromXY, rotateAroundXY)
 
     return (
+        
         <CircleView style={{
             width: radius*2, height: radius*2, backgroundColor: color,
             // absolute positioning with calculated coords
             position: 'absolute', left: X - radius, top: Y - radius, 
         }}>
+            <TouchableOpacity
+            delayLongPress={LONGPRESS_LENGTH}
+            onLongPress={() => {
+                // TODO: touch shape is too small sometimes
+                setMenuVisible(!menuVisible)
+            }}
+            >
+                <View style={{borderRadius: radius, width: radius*2, height: radius*2,}}/>
+            </TouchableOpacity>
+
+            {/************ Edit Pulse popup modal **********/}
+            
+            <PopupMenu containerStyle={styles.popupMenu} isVisible={menuVisible} onClose={() => setMenuVisible(false)}>
+                <Text style={styles.popupMenuText}>Edit Pulse</Text>
+            </PopupMenu>
+
+            {/************ Edit Pulse popup modal **********/}
+
         </CircleView>
     )
 }
+
+function PopupMenu(props) {
+    const { containerStyle, isVisible, onClose } = props
+
+    return (
+        <Modal
+            animationType="slide"
+            transparent={true}
+            visible={isVisible}
+            onRequestClose={onClose}
+
+        >
+            <View style={styles.popupMenuContainer}>
+                <View style={containerStyle}>
+
+                    <TouchableOpacity style={DefaultStyling.backButton} onPress={onClose}>
+                        <Text style={DefaultStyling.backButtonText}>Back</Text>
+                    </TouchableOpacity>
+
+
+                    { props.children }
+
+                </View>
+            </View>
+        </Modal>
+    )
+}
+
+const styles = StyleSheet.create({
+    popupMenuContainer: {
+        flex: 1, 
+        justifyContent: 'flex-end',
+    },
+    popupMenu: {
+        borderTopLeftRadius: 30 * getDeviceNormFactor(),
+        borderTopRightRadius: 30 * getDeviceNormFactor(),
+        height: '60%',
+        width: '100%',
+        paddingBottom: '12%',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: DefaultPallete.popupMenu
+    },
+    popupMenuText: {
+
+    },
+})
 
 // Connect View to Redux store
 const mapStateToProps = (state, props) => {

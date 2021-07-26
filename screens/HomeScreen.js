@@ -2,7 +2,7 @@ import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Audio } from 'expo-av';
 import * as React from 'react';
-import { Modal, Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import { Modal, Text, TouchableOpacity, View, StyleSheet, ActivityIndicator } from 'react-native';
 import { connect } from 'react-redux';
 import { REST_VALUE } from '../data_structures/Structs';
 import { bpmToMilli, getActivePulses, getDeviceNormFactor, loopIncrement, playPulses } from '../Helpers';
@@ -22,13 +22,19 @@ class _HomeScreen extends React.Component {
       onBeat: 0,
       timerID: -1,
       sounds: [],
+      
+      // bool indicator for loading sounds
+      isLoading: false,
 
-      showChooseRhythmScreen: false, // launch ChooseRhythmScreen as modal
+      // launch ChooseRhythmScreen as modal
+      showChooseRhythmScreen: false, 
     }
   }
   
   // cache sounds func
   async loadSounds() {
+    this.setState({isLoading: true})
+
     var loadedFiles = [] // used to not load duplicates 
 
     var loadedSounds = []
@@ -38,10 +44,10 @@ class _HomeScreen extends React.Component {
       const ring = rings[i]
       
       for (let j=0; j<ring.beats.length; j++) {
-        const beat = ring.beats[j]
+        const pulse = ring.beats[j]
 
-        if (beat != REST_VALUE) {
-          const file = beat.sound
+        if (pulse != REST_VALUE) {
+          const file = pulse.sound
 
           if (loadedFiles.indexOf(file) == -1) {
             //  this is the first time, load file and add into keep-track-of-uniques log
@@ -58,6 +64,8 @@ class _HomeScreen extends React.Component {
     }
     // save to state
     this.setState({sounds: loadedSounds})
+    // done loading, set indicator to false!
+    this.setState({isLoading: false})
   }
 
   async unloadSounds() {
@@ -100,10 +108,6 @@ class _HomeScreen extends React.Component {
     this.props.dispatch(setEditMode(mode))
   } 
 
-  async playPulses(pulses) {
-    await playPulses(pulses, this.state.sounds)
-  }
-
   // Moving forward in time 
   tick() {
     // fn to execute every tick (and move tick, make the sound, etc.)
@@ -113,7 +117,7 @@ class _HomeScreen extends React.Component {
       
       // play sounds on current beat
       const pulsesHappening = getActivePulses(this.props.rhythm.rings, this.state.onBeat)
-      this.playPulses(pulsesHappening)
+      playPulses(pulsesHappening, this.state.sounds)
     }
     
     // save timer fn id
@@ -128,6 +132,9 @@ class _HomeScreen extends React.Component {
 
   toggleChooseRhythmScreenModal() {
     this.setState({showChooseRhythmScreen: !this.state.showChooseRhythmScreen})
+
+    // reset onBeat to 0
+    this.setState({onBeat: 0})
   }
 
   render() {
@@ -137,6 +144,15 @@ class _HomeScreen extends React.Component {
     const deleteActionColor = DefaultPallete.playButton
 
     const { navigation, dispatch, isPlaying, rhythm, bpm} = this.props
+    
+    // When loading return loading indicator
+    if (this.state.isLoading) {
+      return (
+        <View style={  [DefaultStyling.screen, {justifyContent: 'center'}] }>
+          <ActivityIndicator style={{alignSelf: 'center'}} size="large" color={DefaultPallete.loadingIndicator} />
+        </View>
+      )
+    }
 
     return (
       <View style={ DefaultStyling.screen }>

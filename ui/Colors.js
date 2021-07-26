@@ -10,6 +10,8 @@ export const DefaultPallete = {
     tabBarText: "#BBDEFB",
     border: "#B0BEC5",
     title: "#455A64",
+    loadingIndicator: "#673AB7",
+    popupMenu: "#FFAB91",
 
     textButton: "#03A9F4",
 

@@ -65,8 +65,8 @@ function _ChooseRhythmScreen(props) {
     return (
         <View style={DefaultStyling.screen}>
 
-            <TouchableOpacity style={styles.backButton} onPress={onClose}>
-                <Text style={styles.backButtonText}>Back</Text>
+            <TouchableOpacity style={DefaultStyling.backButton} onPress={onClose}>
+                <Text style={DefaultStyling.backButtonText}>Back</Text>
             </TouchableOpacity>
 
             <Text style={styles.title}>Choose a rhythm</Text>
@@ -118,16 +118,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         textDecorationLine: 'underline',
     },
-    backButton: {
-        paddingTop: "12%",
-        paddingBottom: "8%"
-    },
-    backButtonText: {
-        fontSize: 20,
-        fontWeight: '300',
-        textDecorationLine: 'underline',
-        color: DefaultPallete.textButton
-    }
+    
 
 })
 

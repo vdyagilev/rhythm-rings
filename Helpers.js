@@ -21,7 +21,7 @@ export function rotateAroundCentre(aroundXY, fromXY, radians) {
 
 export function getPosOnCircle(ringLen, ringIdx, firstPos, centerPos) {
     const rotateRadians = (2*Math.PI / ringLen) * ringIdx
-    return rotateAroundCentre(centerPos, firstPos, rotateRadians)
+    return rotateAroundCentre(centerPos, firstPos,  rotateRadians)
 }
 
 export function bpmToMilli(bpm) {
@@ -46,21 +46,29 @@ export function getActivePulses(rings, idx) {
 }
 
 export async function playPulses(pulses, sounds) {
+    console.log("\nplayPulses debug: ")
+    console.log(pulses, sounds.length)
+
+    const findSoundInCache = (soundFile) => {
+        var cacheSounds = sounds.slice()
+        cacheSounds = cacheSounds.filter(obj => obj.file == soundFile)
+        if (cacheSounds.length > 0) {
+            return cacheSounds[0].sound
+        }
+    }
 
     // load and play their sounds
     for (let i=0; i<pulses.length; i++) {
         const pulse = pulses[i] 
         // grab loaded sound by pulse name
-        const sound = sounds.slice().filter(obj => obj.file == pulse.sound)[0].sound // note: make array copy by value, and we take the only element from a len 1 array
-        // play it!
-
-        // TODO: I've written caching code where sounds are held in HomeScreen state.sounds.
-        // Problem: each audio clip is only played once. But this goes away if we load it up from scratch each time
-        // Fix this to avoid memory leaks and lagg
+        console.log(sounds.map(s => s.file))
+        //findSoundInCache(pulse.sound).playAsync()
+        // console.log(sounds.map(s => s.file))
+        // console.log("\n")
         
-        sound = (await Audio.Sound.createAsync(pulse.sound)).sound
-
-        await sound.playAsync()
+        // # TODO: use cahed sounds, but it was not playing more than once so temporarily brute force load ecah time
+        const x = (await Audio.Sound.createAsync(pulse.sound)).sound
+        x.playAsync()
     }
 }
 

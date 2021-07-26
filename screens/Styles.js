@@ -11,4 +11,14 @@ export const DefaultStyling = StyleSheet.create({
     // horiz_layout: {
 
     // },
+    backButton: {
+      paddingTop: "12%",
+      paddingBottom: "8%"
+    },
+    backButtonText: {
+        fontSize: 20,
+        fontWeight: '300',
+        textDecorationLine: 'underline',
+        color: DefaultPallete.textButton
+    }
   });

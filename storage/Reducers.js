@@ -10,7 +10,6 @@ const initialState = {
 
 export default (state = initialState, action) => {
     switch(action.type) {
-        // TODO
         case SET_IS_PLAYING:
             return {
                 ...state, isPlaying: action.isPlaying

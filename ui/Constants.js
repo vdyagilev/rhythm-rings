@@ -10,3 +10,5 @@ export const RING_WIDTH = 12 * getDeviceNormFactor()
 export const PULSE_RADIUS = 18 * getDeviceNormFactor()
 
 export const CLOCKHAND_WIDTH = 11*getDeviceNormFactor()
+
+export const LONGPRESS_LENGTH = 800
