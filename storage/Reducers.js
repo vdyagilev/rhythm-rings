@@ -23,7 +23,7 @@ export default (state = initialState, action) => {
         
         case SET_BPM: 
             return {
-                ...state, bpm: action.bpm
+                ...state, bpm: action.bpm <= 0 ? 0 : Math.floor(action.bpm) // floor bpm to positive integer
             }
         
         case SET_SELECTED_RHYTHM:

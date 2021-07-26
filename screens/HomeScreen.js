@@ -7,7 +7,7 @@ import { connect } from 'react-redux';
 import { REST_VALUE } from '../data_structures/Structs';
 import { bpmToMilli, getActivePulses, getDeviceNormFactor, loopIncrement, playPulses } from '../Helpers';
 import { setEditMode, setIsPlaying } from '../storage/Actions';
-import { PlayButton, TwoItemButton } from '../ui/Buttons';
+import { PlayButton, SetBPMButton, TwoItemButton } from '../ui/Buttons';
 import { DefaultPallete } from '../ui/Colors';
 import { RhythmVisualizer } from '../ui/Visualizer';
 import { DefaultStyling } from './Styles';
@@ -130,11 +130,16 @@ class _HomeScreen extends React.Component {
     this.setState({timerID: -1})
   }
 
-  toggleChooseRhythmScreenModal() {
-    this.setState({showChooseRhythmScreen: !this.state.showChooseRhythmScreen})
-
-    // reset onBeat to 0
+  async toggleChooseRhythmScreenModal() {
+    // stop playing and reset onBeat to 0 
+    this.stopGame()
     this.setState({onBeat: 0})
+
+    // load new sounds
+    this.loadSounds()
+
+    // hide modal
+    this.setState({showChooseRhythmScreen: !this.state.showChooseRhythmScreen})
   }
 
   render() {
@@ -184,7 +189,7 @@ class _HomeScreen extends React.Component {
         </View>
 
         <View style={styles.info_container}>
-          <View style={{flexDirection: 'row', alignSelf: 'flex-start', flex: 1}}>
+          <View style={{flexDirection: 'row', alignSelf: 'flex-start'}}>
             <TouchableOpacity onPress={() => {}}>
               <AntDesign name="addfile" size={24*getDeviceNormFactor()} color="black" />
             </TouchableOpacity>
@@ -194,6 +199,9 @@ class _HomeScreen extends React.Component {
           </View>
 
           <Text style={styles.rhythm_name}>{rhythm.name}</Text>
+
+          <SetBPMButton />
+
         </View>
 
         <RhythmVisualizer rhythm={rhythm} clockhandIdx={ this.state.onBeat } 
@@ -272,8 +280,7 @@ const styles = StyleSheet.create({
     info_container: {
       flexDirection: 'row',
       width: '100%', 
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: 'space-between',
       padding: 10,
     },
 

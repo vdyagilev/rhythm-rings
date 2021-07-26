@@ -157,7 +157,7 @@ const ImpeachThePresident = {
         },
         {
             sound: DrumSounds.openHat,
-            pulses: [10,],
+            pulses: [10],
             ringColor: DefaultPallete.ring_alt,
             pulseColor: DefaultPallete.mickeyHart,
             pulseVolume: DEFAULT_PULSE_VOLUME
@@ -221,7 +221,7 @@ export const RHYTHM_LIBRARY_CATEGORIES = [
     {name: "Breakbeat", startIdx: 0, endIdx: 10}
 ]
 
-export const DEFAULT_RHYTHM =  buildRhythmFromJson(DebuggerRhythm) //RHYTHM_LIBRARY[0]
+export const DEFAULT_RHYTHM = RHYTHM_LIBRARY[0]
 
 // Each rhythm is categoriezed by its position in the RHYTHM_LIBRARY list
 export function getRhythmCategory(rhythm){

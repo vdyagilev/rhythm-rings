@@ -33,6 +33,9 @@ export const DefaultPallete = {
     selectedItemContainer: "#FFCCBC",
     unselectedItemContainer: "#FAFAFA",
 
+    caretUp: "#66BB6A",
+    caretDown: "#D32F2F",
+
     // used as default colors for styling pulses etc.
     jerryGarcia: "#D81B60",
     bobWeir: "#2196F3",
