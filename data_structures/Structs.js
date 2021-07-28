@@ -1,14 +1,17 @@
+import { getRandomID } from "../Helpers"
 
 export class Pulse {
     constructor(volume, sound, color) {
         this.volume = volume
         this.sound = sound
         this.color = color
+        this._id = getRandomID()
     }
 
 }
 
-export const REST_VALUE = null
+// Used to initialize empty beats. Stored as ring.restValue in all rings. 
+const REST_VALUE = null
 
 export function createRestBeats(length) {
     // Use to initialize empty ring
@@ -21,6 +24,7 @@ export class Ring {
         this.length = length
         this.beats = beats // every beat is either a rest or a pulse
         this.color = color
+        this._id = getRandomID()
     }
     addPulse(index, pulse) {
     // Add pulse onto index
@@ -49,5 +53,6 @@ export class Rhythm {
         this.rings = rings
         this.length = length
         this.name = name
+        this._id = getRandomID()
     }
 }

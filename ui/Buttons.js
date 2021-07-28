@@ -31,6 +31,19 @@ export function PlayButton(props) {
   );
 }
 
+export function TextButton(props) {
+  // its a sexy motherfucka
+  const {text, onPress, textStyle, containerStyle} = props
+
+  return (
+    <View style={containerStyle}>
+      <TouchableOpacity onPress={onPress} style={{flex: 1}}>
+        <Text style={textStyle}>{text}</Text>
+      </TouchableOpacity>
+    </View>
+  )
+}
+
 export function TwoItemButton(props) {
   // Horizontally spaced two item button
   const { item1, item2, onPress, containerStyle} = props;
@@ -124,10 +137,11 @@ class _SetBPMButton extends React.Component {
   render() {
     const { holdTime } = this.state
     const { bpm } = this.props
+    const caretSize = 24 * getDeviceNormFactor()
     return (
       <View style={styles.bpm_button}>
         <TouchableOpacity onPress={this.updateBPMAdd.bind(this, 1)} onPressIn={this.startGrow.bind(this)} onPressOut={this.stop.bind(this)}>
-          <AntDesign name="caretup" size={20 * getDeviceNormFactor()} color={DefaultPallete.caretUp} />
+          <AntDesign name="caretup" size={caretSize} color={DefaultPallete.caretUp} />
         </TouchableOpacity>
 
         <TextInput 
@@ -136,7 +150,7 @@ class _SetBPMButton extends React.Component {
         </TextInput>
 
         <TouchableOpacity onPress={this.updateBPMAdd.bind(this, -1)} onPressIn={this.startShrink.bind(this)} onPressOut={this.stop.bind(this)}>
-          <AntDesign name="caretdown" size={20 * getDeviceNormFactor()} color={DefaultPallete.caretDown} />
+          <AntDesign name="caretdown" size={caretSize} color={DefaultPallete.caretDown} />
         </TouchableOpacity>
       </View>
   )}
@@ -153,7 +167,6 @@ const styles = StyleSheet.create({
   // Play Button
   play_button: {
     width: "80%",
-
 
     alignItems: 'center',
     justifyContent: 'center',

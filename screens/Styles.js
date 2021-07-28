@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import { getDeviceNormFactor } from '../Helpers';
 import { DefaultPallete } from '../ui/Colors';
 
 export const DefaultStyling = StyleSheet.create({
@@ -12,11 +13,9 @@ export const DefaultStyling = StyleSheet.create({
 
     // },
     backButton: {
-      paddingTop: "12%",
-      paddingBottom: "8%"
     },
     backButtonText: {
-        fontSize: 20,
+        fontSize: 20 * getDeviceNormFactor(),
         fontWeight: '300',
         textDecorationLine: 'underline',
         color: DefaultPallete.textButton

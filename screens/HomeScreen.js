@@ -1,24 +1,15 @@
 import { AntDesign, Ionicons } from '@expo/vector-icons';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Audio } from 'expo-av';
 import * as React from 'react';
-import { Modal, Text, TouchableOpacity, View, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { ActivityIndicator, Alert, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { connect } from 'react-redux';
-import { REST_VALUE } from '../data_structures/Structs';
-import { bpmToMilli, getActivePulses, getDeviceNormFactor, getScreenHeight, loopIncrement, playPulses } from '../Helpers';
-import { setEditMode, setIsPlaying } from '../storage/Actions';
+import { bpmToMilli, getActivePulses, getDeviceNormFactor, loopIncrement, playPulses } from '../Helpers';
+import { loadSoundCache, setEditMode, setIsPlaying, unloadSoundCache } from '../storage/Actions';
 import { PlayButton, SetBPMButton, TwoItemButton } from '../ui/Buttons';
 import { DefaultPallete } from '../ui/Colors';
 import { RhythmVisualizer } from '../ui/Visualizer';
+import { ChooseRhythmScreen } from './ChooseRhythmScreen';
 import { DefaultStyling } from './Styles';
-import { ChooseRhythmScreen } from './ChooseRhythmScreen'
-
-
-// TODO: have sounds play simultenously https://forums.expo.io/t/how-to-play-one-sound-file-simultaneously-polyphonically-play-a-sound/54917
-
-// each sound loaded by expo-av is duplicated
-// so that we can play the sound polyphonically
-export const NUM_REFS_TO_SOUND = 1 // TODO:
 
 class _HomeScreen extends React.Component {  
   // { navigation, dispatch, isPlaying, rhythm, bpm} = props
@@ -27,7 +18,6 @@ class _HomeScreen extends React.Component {
     this.state = {
       onBeat: 0,
       timerID: -1,
-      sounds: [],
       
       // bool indicator for loading sounds
       isLoading: false,
@@ -37,63 +27,10 @@ class _HomeScreen extends React.Component {
     }
   }
   
-  // cache sounds func
-  async loadSounds() {
-    this.setState({isLoading: true})
-
-    var loadedFiles = [] // used to not load duplicates 
-
-    var loadedSounds = []
-
-    const rings = this.props.rhythm.rings
-    for (let i=0; i<rings.length; i++) {
-      const ring = rings[i]
-      
-      for (let j=0; j<ring.beats.length; j++) {
-        const pulse = ring.beats[j]
-
-        if (pulse != REST_VALUE) {
-          const file = pulse.sound
-
-          if (loadedFiles.indexOf(file) == -1) {
-            //  this is the first time, load file and add into keep-track-of-uniques log
-            loadedFiles.push(file)
-
-            // add into sounds as easy-to-access file -> sound obj
-
-            // create multiple copies of the sound so we can play it polyphonically
-            for (let x=0; x<NUM_REFS_TO_SOUND; x++) {
-              const refObj = {
-                id: x, 
-                file: file, 
-                sound: (await Audio.Sound.createAsync(file)).sound, 
-                isPlaying: false
-              }
-              loadedSounds.push(refObj)
-            }            
-          }
-        }
-      }
-    }
-    // save to state
-    this.setState({sounds: loadedSounds})
-    // done loading, set indicator to false!
-    this.setState({isLoading: false}) 
-  }
-
-  async unloadSounds() {
-    const sounds = this.state.sounds
-    for (let i=0; i<sounds.length; i++) {
-      sounds[i].sound.unloadAsync()
-    }
-
-    // save to state
-    this.setState({sounds: []})
-  }
 
   componentDidMount() {
     // Cache all sounds used in current rhythm
-    this.loadSounds()
+    this.props.dispatch( loadSoundCache() )
   }
 
 
@@ -102,7 +39,7 @@ class _HomeScreen extends React.Component {
     this.clearTimer()
 
     // clear cached sounds
-    this.unloadSounds()
+    this.props.dispatch( unloadSoundCache() )
   }
 
   
@@ -130,7 +67,7 @@ class _HomeScreen extends React.Component {
       
       // play sounds on current beat
       const pulsesHappening = getActivePulses(this.props.rhythm.rings, this.state.onBeat)
-      playPulses.bind(this)(pulsesHappening, this.state.sounds)
+      playPulses(pulsesHappening, this.props.sounds)
     }
     
     // save timer fn id
@@ -154,7 +91,7 @@ class _HomeScreen extends React.Component {
 
   async closeChooseRhythmScreenModal() {
     // load new sounds
-    this.loadSounds()
+    this.loadSounds.bind(this)()
 
     // hide modal
     this.setState({showChooseRhythmScreen: false})
@@ -206,7 +143,7 @@ class _HomeScreen extends React.Component {
       <View style={ DefaultStyling.screen }>
 
         <View style={styles.info_container}>
-          <View style={{ justifyContent: 'space-evenly', alignSelf: 'flex-start', alignItems: 'center', }}>
+          <View style={{paddingTop: 10, justifyContent: 'space-evenly', alignSelf: 'flex-start', alignItems: 'center', }}>
             <TouchableOpacity style={[styles.iconButton, {paddingBottom: 10, marginLeft: -5}]} onPress={ this.onPressSaveFile.bind(this) }>
               <AntDesign name="addfile" size={28 * getDeviceNormFactor()} color={DefaultPallete.iconButton} />
             </TouchableOpacity>
@@ -219,14 +156,17 @@ class _HomeScreen extends React.Component {
 
 
           <View style={{alignItems:'center'}}>
-            <SetBPMButton />
             <Text style={styles.bpmTitle}>BPM</Text>
+            <SetBPMButton />
           </View>
 
         </View>
 
-        <RhythmVisualizer rhythm={rhythm} clockhandIdx={ this.state.onBeat } 
-          containerStyle={styles.visualizer_container}/>
+        <RhythmVisualizer 
+          rhythm={rhythm} 
+          clockhandIdx={ this.state.onBeat } 
+          containerStyle={styles.visualizer_container}
+          />
 
         <PlayButton 
           onPressPlay={ this.startGame.bind(this) }
@@ -288,7 +228,8 @@ const mapStateToProps = (state, props) => {
   return { 
     isPlaying: state.isPlaying,
     rhythm: state.selectedRhythm,
-    bpm: state.bpm
+    bpm: state.bpm,
+    sounds: state.soundCache
   }
 }
 HomeScreen = connect(mapStateToProps)(_HomeScreen)
@@ -350,7 +291,7 @@ const styles = StyleSheet.create({
     bpmTitle: {
       fontSize: 10 * getDeviceNormFactor(),
       color: DefaultPallete.rhythmName,
-      paddingTop: 5,
+      paddingBottom: 5,
     },
     iconButton: {
     }

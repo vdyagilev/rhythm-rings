@@ -9,6 +9,12 @@ import store from './storage/Store';
 import { DefaultPallete } from './ui/Colors';
 import { TAB_ICON_SIZE } from './ui/Constants';
 
+// init reactotron debugger
+if(__DEV__) {
+  import('./ReactotronConfig').then(() => console.log('Reactotron Configured'))
+}
+
+
 const Tab = createBottomTabNavigator()
 
 export default function App() {

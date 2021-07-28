@@ -14,7 +14,7 @@ export const DefaultPallete = {
 
     loadingIndicator: "#673AB7",
 
-    popupMenu: "#FFAB91",
+    popupMenu: "#FAFAFA",
 
     textButton: "#03A9F4",
     iconButton: "#303F9F",
@@ -40,6 +40,12 @@ export const DefaultPallete = {
     caretUp: "#4FC3F7",
     caretDown: "#A5D6A7",
     bpm: "#4527A0",
+
+    clockfaceText: "#455A64",
+
+    sliderBefore: "#4FC3F7",
+    sliderAfter: "#303F9F",
+    settingText: "#455A64",
 
     // used as default colors for styling pulses etc.
     jerryGarcia: "#D81B60",

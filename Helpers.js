@@ -1,6 +1,5 @@
 import { Audio } from 'expo-av';
 import { Dimensions, PixelRatio } from 'react-native';
-import { REST_VALUE } from './data_structures/Structs';
 
 // Dynamic device dimensions
 export function getScreenWidth() { return Dimensions.get('screen').width }
@@ -38,7 +37,7 @@ export function getActivePulses(rings, idx) {
     for (let i=0; i<rings.length; i++) {
         const ring = rings[i]
         const pulse = ring.getPulse(idx)
-        if (pulse != REST_VALUE) {
+        if (pulse != ring.restValue) {
             activePulses.push(pulse)
         }
     }
@@ -46,6 +45,7 @@ export function getActivePulses(rings, idx) {
 }
 
 export async function playPulses(pulses, sounds) {  
+    console.log(pulses, sounds.length, "\n")
     const findSoundInCache = (soundFile) => {
         var cacheSounds = sounds
 
@@ -95,4 +95,14 @@ export function rangeWithDisclude(start, end, excludeNums) {
     excludeNums = preNums.concat(excludeNums)
     // filter out excludeNums
     return [...Array(end).keys()].filter(n => excludeNums.indexOf(n) == -1)
+}
+
+export function getRandomID() {
+    return Math.floor(Math.random() * 1000000)
+}
+
+export function transposeAudio(semitones) {
+    // will return the playback speed (factor) you play your audio clip at to shift its pitch semitones higher
+    const speed = 2**(semitones/12)
+    return speed 
 }
