@@ -7,9 +7,9 @@ import DropDownPicker from 'react-native-dropdown-picker';
 import Svg, { Line } from 'react-native-svg';
 import { connect } from 'react-redux';
 import { BassSounds, DrumSounds, MajorChords, MinorChords, NoteSounds } from '../data_structures/Sounds';
-import { getDeviceNormFactor, getPosOnCircle, getViewHeight, getViewWidth } from '../Helpers';
+import { getCommonProperty, getCommonRingProperty, getDeviceNormFactor, getPosOnCircle, getViewHeight, getViewWidth } from '../Helpers';
 import { DefaultStyling } from '../screens/Styles';
-import { addSoundFileCache, setPulseColor, setPulseSound, setPulseSoundAndCacheIt, setPulseVolume } from '../storage/Actions';
+import { addSoundFileCache, setPulseColor, setPulseSound, setPulseSoundAndCacheIt, setPulseVolume, setRingColor } from '../storage/Actions';
 import { DefaultPallete } from './Colors';
 import { CLOCKHAND_WIDTH, LONGPRESS_LENGTH, PULSE_RADIUS, RING_INNERMOST_DIST, RING_SHIFT_DIST, RING_WIDTH } from './Constants';
 import { CircleView } from './Shapes';
@@ -25,14 +25,29 @@ class rhythmVisualizer extends React.Component {
         this.vertMidpoint = getViewHeight()/2
     }
     
-    
+
     renderRings() {
+        const { dispatch } = this.props;
         const {rings, length} = this.props.rhythm 
         const innerColor = DefaultPallete.background
 
         return rings.map((r, i) => 
             // Draw series of concentric rings, starting from innermost ring and extending outwards by shiftDist 
-            <RingView key={i} radius={(i * RING_SHIFT_DIST) + RING_INNERMOST_DIST} width={RING_WIDTH} ringColor={r.color} innerColor={innerColor}/>
+            <RingView 
+                key={i} 
+                radius={(i * RING_SHIFT_DIST) + RING_INNERMOST_DIST} 
+                width={RING_WIDTH} 
+                innerColor={innerColor}
+
+                ringColor={r.color} 
+                onUpdateRingColor={color => dispatch( setRingColor(r._id, color) )}
+                pulseCommonColor={ getCommonRingProperty(r, p => p.color) }
+                onUpdateCommonColor={ color => {r.beats.map(b => b != r.restValue ? dispatch( setPulseColor(b._id, color)) : {}) } }
+                pulseCommonVolume={ getCommonRingProperty(r, p => p.volume) }
+                onUpdateCommonVolume={ volume => {r.beats.map(b => b != r.restValue ? dispatch( setPulseVolume(b._id, volume)) : {}) }  }
+                pulseCommonSound={ getCommonRingProperty(r, p => p.sound) }
+                onUpdateCommonSound={ sound => {r.beats.map(b => b != r.restValue ? dispatch( setPulseSound(b._id, sound)) : {}) }  }
+            />
         )
     }
 
@@ -46,7 +61,7 @@ class rhythmVisualizer extends React.Component {
         const ringTop = this.vertMidpoint - RING_INNERMOST_DIST - 1.8*this.playButtonHeight 
         const ringCenter = {X: ringLeft + RING_INNERMOST_DIST, Y: ringTop + RING_INNERMOST_DIST}
 
-        const firstPulsePos = {X: ringCenter.X, Y: ringTop}
+        const firstPulsePos = {X: ringCenter.X, Y: ringTop+PULSE_RADIUS/3}
 
         var views = []
         for (let ri = 0; ri < rings.length; ri++){
@@ -93,7 +108,7 @@ class rhythmVisualizer extends React.Component {
 
         const firstPos = {
             X: ringLeft + RING_INNERMOST_DIST, 
-            Y: ringTop + (rings.length+1)*(RING_WIDTH+RING_SHIFT_DIST)
+            Y: ringTop + (rings.length+1)*(RING_WIDTH+RING_SHIFT_DIST) - 20*getDeviceNormFactor()
         }
         const clockhandTipXY = getPosOnCircle(length, (length/2) + clockhandIdx, firstPos, ringCenter)
 
@@ -116,7 +131,7 @@ class rhythmVisualizer extends React.Component {
         const ringBot = this.vertMidpoint + RING_INNERMOST_DIST - 1.8*this.playButtonHeight 
         const ringCenter = {X: ringLeft + RING_INNERMOST_DIST, Y: ringTop + RING_INNERMOST_DIST}
 
-        const firstLabelPos = {X: ringCenter.X, Y: ringBot - (rings.length+1)*(2*RING_WIDTH+RING_SHIFT_DIST)} // first label at the top
+        const firstLabelPos = {X: ringCenter.X, Y: ringBot - (rings.length+1)*(2*RING_WIDTH+RING_SHIFT_DIST)+(40*getDeviceNormFactor())} // first label at the top
         
         var views = []
         for (let i=0; i<length; i++) {
@@ -158,7 +173,10 @@ class rhythmVisualizer extends React.Component {
 }
 
 function RingView(props) {
-    const { radius, width, ringColor, innerColor, beats } = props
+    const { radius, width, ringColor, innerColor } = props
+
+    // popup menu consts
+    const { onUpdateRingColor, pulseCommonColor, onUpdateCommonColor, pulseCommonVolume, onUpdateCommonVolume, pulseCommonSound, onUpdateCommonSound  } = props
 
     // calculate absolute position to draw (left, top coord)
     const horizMidpoint = getViewWidth()/2
@@ -168,7 +186,8 @@ function RingView(props) {
     const playButtonHeight = getViewHeight()*(0.03)+40 + (20 * getDeviceNormFactor()) // padding
     const ringTop = vertMidpoint - radius - 1.8*playButtonHeight 
     
-   
+    // Popup menu variables
+    const [ menuVisible, setMenuVisible ] = useState(false)
 
     return (
         // Visible Circle
@@ -179,9 +198,81 @@ function RingView(props) {
                 position: 'absolute',
                 left: ringLeft, top: ringTop,
             }}>
+            <TouchableOpacity
+                delayLongPress={LONGPRESS_LENGTH}
+                onLongPress={() => setMenuVisible(!menuVisible)}>
+
+                    <View style={{ borderRadius: radius, width: radius*2, height: radius*2, 
+                    position: 'absolute', left: -radius, top: -width}}/>
+
+            </TouchableOpacity>
+            
             {/* Inner circle (so that Visible circle is just a Stroke (borderline))  */}
-            <View pointerEvents="none" style={{borderRadius: radius, width: (radius-width)*2, 
+            <View style={{borderRadius: radius, width: (radius-width)*2, 
                 height: (radius-width)*2, backgroundColor: innerColor}}/>
+
+            {/************ Edit Pulse popup modal **********/}
+            
+            <PopupMenu containerStyle={styles.popupMenu} isVisible={menuVisible} onClose={() => setMenuVisible(false)}>
+
+                <Text style={styles.popupMenuText}>Ring Setup</Text>
+
+                <View style={{width: '90%', flexDirection: 'row', justifyContent: 'space-between'}}>
+
+                    <Text style={styles.settingText}>Color</Text>
+                    <ChooseColorView 
+                        containerStyle={[styles.settingItem, {
+                        paddingVertical: 5,
+                        width: getViewWidth()*0.8 // use real-value for ScrollView to work
+                        }]} 
+                        onChoose={c => onUpdateRingColor(c)} 
+                        selectedColor={ringColor} 
+                    />
+                </View>
+
+                <Text style={styles.popupMenuSecondaryText}>Setup Ring Pulses</Text>
+
+                <View style={{width: '90%', flexDirection: 'row', justifyContent: 'space-between'}}>
+                    <Text style={styles.settingText}>Color</Text>
+                    <ChooseColorView 
+                        containerStyle={[styles.settingItem, {
+                        paddingVertical: 5,
+                        width: getViewWidth()*0.8 // use real-value for ScrollView to work
+                        }]} 
+                        onChoose={c => onUpdateCommonColor(c)} 
+                        selectedColor={pulseCommonColor} 
+                        noShading={true}
+                    />
+                </View>
+
+                <View style={{width: '90%', flexDirection: 'row', justifyContent: 'space-between'}}>
+                    <Text style={styles.settingText}>Volume</Text>
+                    <Slider
+                        onSlidingComplete={vol => onUpdateCommonVolume(vol)}
+                        minimumValue={0}
+                        maximumValue={1}
+                        value={pulseCommonVolume}
+                        step={0.1}
+                        style={styles.settingItem}
+                        minimumTrackTintColor={DefaultPallete.sliderBefore}
+                        maximumTrackTintColor={DefaultPallete.sliderAfter}
+                    />
+                </View>
+                
+                <View style={{width: '90%', flexDirection: 'row', justifyContent: 'space-between'}}>
+                    <Text style={styles.settingText}>Sound</Text>
+                    <ChooseSoundView 
+                        containerStyle={[styles.settingItem, {
+                        width: getViewWidth()*0.64 // use real-value for react-native-picker to be proper width
+                        }]} 
+                        onChoose={(s) => onUpdateCommonSound(s) } 
+                        selectedSound={pulseCommonSound} 
+                    />
+                </View>
+                
+            </PopupMenu>
+
+            {/************ Edit Pulse popup modal **********/}
 
         </CircleView>
     )
@@ -263,11 +354,14 @@ function PulseView(props) {
 }
 
 function ChooseColorView(props) {
-    const { onChoose, selectedColor, containerStyle } = props
+    const { onChoose, selectedColor, containerStyle, noShading } = props
 
     const renderColor = (hex) => {
     // render colour as a circle view that is a button and has on-selected shading property
-        const shading = (selectedColor == hex) ? 1.0 : 0.3
+        var shading = (selectedColor == hex) ? 1.0 : 0.3
+        if (noShading) {
+            shading = 1.0
+        }
         return (
             <TouchableOpacity key={hex} onPress={() => onChoose(hex)}> 
                 <CircleView style={{marginRight: 10, backgroundColor: 'white', height: 50, width: 50, position: 'absolute'}}/>
@@ -399,6 +493,11 @@ const styles = StyleSheet.create({
     },
     popupMenuText: {
         fontSize: 22 * getDeviceNormFactor(),
+    },
+    popupMenuSecondaryText: {
+        fontSize: 18 * getDeviceNormFactor(),
+        color: DefaultPallete.settingText,
+        fontWeight: '300',
     },
     clockfaceBeatNum: {
         fontSize: 24 * getDeviceNormFactor(),

@@ -1,5 +1,5 @@
 import { DEFAULT_RHYTHM } from "../data_structures/RhythmLibrary";
-import { SET_BPM, SET_EDIT_MODE, SET_IS_PLAYING, SET_PULSE_COLOR, SET_PULSE_SOUND, SET_PULSE_VOLUME, SET_SELECTED_RHYTHM, SET_SOUND_CACHE } from './Actions';
+import { SET_BPM, SET_EDIT_MODE, SET_IS_PLAYING, SET_PULSE_COLOR, SET_PULSE_SOUND, SET_PULSE_VOLUME, SET_RING_COLOR, SET_SELECTED_RHYTHM, SET_SOUND_CACHE } from './Actions';
 
 const initialState = {
     isPlaying: false,   
@@ -31,6 +31,11 @@ export default (state = initialState, action) => {
                 ...state, selectedRhythm: action.rhythm
             }
         
+        case SET_RING_COLOR:
+            return {
+                ...state, selectedRhythm: setRingColor(action.color, action.ringID, state.selectedRhythm)
+            }
+
         // UPDATE SINGLE PULSE ACTIONS
         case SET_PULSE_COLOR:
             return {
@@ -58,7 +63,6 @@ export default (state = initialState, action) => {
 
 function getPulseByID(pulseID, rhythm) {
     // Find pulse by (hopefully) unique id in a rhythm
-
     for (let r=0; r < rhythm.rings.length; r++) {
         for (let b=0; b < rhythm.rings[r].beats.length; b++) {
             const restValue = rhythm.rings[r].restValue
@@ -72,12 +76,26 @@ function getPulseByID(pulseID, rhythm) {
     }
 }
 
+function getRingByID(ringID, rhythm) {
+    // Find ring by (hopefully) unique id in a rhythm
+    for (let r=0; r < rhythm.rings.length; r++) {
+       if (rhythm.rings[r]._id == ringID) {
+            // located
+           return rhythm.rings[r]
+       }
+    }
+}
+
+function setRingColor(color, ringID, rhythm) {
+    getRingByID(ringID, rhythm).color = color
+    return Object.assign({}, rhythm) // return copy to force refresh store !!!
+} 
+
 function setPulseColor(color, pulseID, rhythm) {
     getPulseByID(pulseID, rhythm).color = color
     return Object.assign({}, rhythm) // return copy to force refresh store !!!
 } 
 function setPulseSound(sound, pulseID, rhythm) {
-    console.log(sound, getPulseByID(pulseID, rhythm).sound, pulseID)
     getPulseByID(pulseID, rhythm).sound = sound
     return Object.assign({}, rhythm) // return copy to force refresh store !!!
 } 

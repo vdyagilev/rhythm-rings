@@ -45,7 +45,6 @@ export function getActivePulses(rings, idx) {
 }
 
 export async function playPulses(pulses, sounds) {  
-    console.log(pulses, sounds.length, "\n")
     const findSoundInCache = (soundFile) => {
         var cacheSounds = sounds
 
@@ -105,4 +104,24 @@ export function transposeAudio(semitones) {
     // will return the playback speed (factor) you play your audio clip at to shift its pitch semitones higher
     const speed = 2**(semitones/12)
     return speed 
+}
+
+export function getCommonRingProperty(ring, pulsePropFn) {
+    var common = null
+    for (let i=0; i<ring.length; i++) {
+        const pulse = ring.beats[i]
+        if (pulse != ring.restValue) {
+            const prop = pulsePropFn(pulse)
+            if (i == 0) {
+                // first obj
+                common = prop
+            } else {
+                // compare with common
+                if (common != prop) {
+                    return null // NO COMMON
+                }
+            }
+        }
+    }
+    return common
 }

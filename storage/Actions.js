@@ -45,6 +45,12 @@ export const setPulseSound = (pulseID, sound) => ({
     sound: sound,
 })
 
+export const SET_RING_COLOR = "SET_COLOR_RING"
+export const setRingColor = (ringID, color) => ({
+    type: SET_RING_COLOR,
+    ringID: ringID,
+    color: color
+})
 
 export const SET_SOUND_CACHE = "SET_SOUND_CACHE"
 export const setSoundCache = (sounds) => ({
