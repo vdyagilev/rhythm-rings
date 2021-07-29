@@ -18,6 +18,8 @@ class _HomeScreen extends React.Component {
     this.state = {
       onBeat: 0,
       timerID: -1,
+      mode: "play",
+      // which mode we're in. modes = ["play", "add_ring", "del_ring", "add_pulse", "del_pulse"]
       
       // bool indicator for loading sounds
       isLoading: false,
@@ -45,11 +47,17 @@ class _HomeScreen extends React.Component {
   
   // Play button actions
   startGame() {
+    // set mode back to play mode
+    this.setState({mode: "play"})
+
     this.props.dispatch(setIsPlaying(true))
     this.tick()
   }
 
   stopGame() {
+    // set mode back to play mode
+    this.setState({mode: "play"})
+
     this.props.dispatch(setIsPlaying(false))
     this.clearTimer()
   }
@@ -125,8 +133,8 @@ class _HomeScreen extends React.Component {
   render() {
     // Action button styling
     const actionButtonSize = 24*getDeviceNormFactor()
-    const createActionColor = DefaultPallete.stopButton
-    const deleteActionColor = DefaultPallete.playButton
+    const createActionColor = DefaultPallete.playButton
+    const deleteActionColor = DefaultPallete.stopButton
 
     const { navigation, dispatch, isPlaying, rhythm, bpm} = this.props
     
@@ -139,8 +147,43 @@ class _HomeScreen extends React.Component {
       )
     }
 
+    // Switch between the homescreen modes with different ui's. modes = ["play", "add_ring", "del_ring", "add_pulse", "del_pulse"]
+    var backgroundColor = DefaultPallete.background
+    var modeHeader 
+    var onTouchFn
+    switch (this.state.mode) {
+      case "play":
+        modeHeader = null
+        onTouchFn = null
+        break
+
+      case "add_ring":
+        backgroundColor = DefaultPallete.backgroundAddMode
+        modeHeader = (<Text style={styles.modeHeaderText}>Tap to Add Ring</Text>)
+        //onTouchFn = // TODO:
+        break
+
+      case "del_ring":
+        backgroundColor = DefaultPallete.backgroundDelMode
+        modeHeader = (<Text style={styles.modeHeaderText}>Tap to Delete Ring</Text>)
+        break
+
+      case "add_pulse":
+        backgroundColor = DefaultPallete.backgroundAddMode
+        modeHeader = (<Text style={styles.modeHeaderText}>Tap to Add Pulse</Text>)
+        break
+
+      case "del_pulse":
+        backgroundColor = DefaultPallete.backgroundDelMode
+        modeHeader = (<Text style={styles.modeHeaderText}>Tap to Delete Pulse</Text>)
+        break
+
+      default:
+        break
+    }
+
     return (
-      <View style={ DefaultStyling.screen }>
+      <View style={ [DefaultStyling.screen, {backgroundColor: backgroundColor}] }>
 
         <View style={styles.info_container}>
           <View style={{paddingTop: 10, justifyContent: 'space-evenly', alignSelf: 'flex-start', alignItems: 'center', }}>
@@ -183,25 +226,27 @@ class _HomeScreen extends React.Component {
             <TwoItemButton 
               item1={<AntDesign name="pluscircleo" size={actionButtonSize} color={createActionColor}/>} 
               item2={<Text style={styles.button_text}>Add Ring</Text>}
-              onPress={this.setMode.bind(this,"new_ring")} containerStyle={styles.action_button}
+              onPress={() => this.setState({mode: "add_ring"})} containerStyle={styles.action_button}
             />
             <TwoItemButton 
               item1={<AntDesign name="minuscircleo" size={actionButtonSize} color={deleteActionColor}/>} 
               item2={<Text style={styles.button_text}>Del Ring</Text>}
-              onPress={this.setMode.bind(this,"del_ring")} containerStyle={styles.action_button}
+              onPress={() => this.setState({mode: "del_ring"})} containerStyle={styles.action_button}
             />
             <TwoItemButton 
               item1={<AntDesign name="pluscircle" size={actionButtonSize} color={createActionColor}/>} 
               item2={<Text style={styles.button_text}>Add Pulse</Text>}
-              onPress={this.setMode.bind(this,"new_pulse")} containerStyle={styles.action_button}
+              onPress={() => this.setState({mode: "add_pulse"})} containerStyle={styles.action_button}
             />
             <TwoItemButton 
               item1={<AntDesign name="minuscircle" size={actionButtonSize} color={deleteActionColor}/>} 
               item2={<Text style={styles.button_text}>Del Pulse</Text>}
-              onPress={this.setMode.bind(this,"del_pulse")} containerStyle={styles.action_button}
+              onPress={() => this.setState({mode: "del_ring"})} containerStyle={styles.action_button}
             />
           </View>
         </View>
+
+        { modeHeader }
 
         {/* *********** ChooseRhythmScreen Modal *************/}
 
@@ -245,6 +290,15 @@ export function HomeStackScreen() {
 }
 
 const styles = StyleSheet.create({
+    modeHeaderText: {
+      position: 'absolute',
+      width: '100%',
+      textAlign: 'center',
+      top: '12%',
+      fontSize: 18 * getDeviceNormFactor(),
+      fontWeight: '300',
+      color: DefaultPallete.modeHeaderText,
+    },
     action_buttons_container: {
       flex: 1,
       flexDirection: 'row',
@@ -256,8 +310,10 @@ const styles = StyleSheet.create({
     button_text: {
       color: DefaultPallete.buttonText,
       fontSize: 12 * getDeviceNormFactor(),
+      paddingVertical: 5*getDeviceNormFactor(),
     },
     action_button: {
+
     },
 
     menu_container: {

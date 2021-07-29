@@ -3,7 +3,6 @@ import { SET_BPM, SET_EDIT_MODE, SET_IS_PLAYING, SET_PULSE_COLOR, SET_PULSE_SOUN
 
 const initialState = {
     isPlaying: false,   
-    editMode: null,
     selectedRhythm: DEFAULT_RHYTHM,
     bpm: 80,
     soundCache: [],
@@ -14,11 +13,6 @@ export default (state = initialState, action) => {
         case SET_IS_PLAYING:
             return {
                 ...state, isPlaying: action.isPlaying
-            }
-        
-        case SET_EDIT_MODE:
-            return {
-                ...state, editMode: action.mode
             }
         
         case SET_BPM: 

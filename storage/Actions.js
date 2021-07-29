@@ -6,11 +6,6 @@ export const setIsPlaying = (isPlaying) => ({
     isPlaying: isPlaying
 })
 
-export const SET_EDIT_MODE = "SET_EDIT_MODE"
-export const setEditMode = (mode) => ({
-    type: SET_EDIT_MODE,
-    mode: mode
-})
 
 export const SET_BPM = "SET_BPM"
 export const setBPM = (bpm) => ({

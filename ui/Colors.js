@@ -5,12 +5,15 @@
 // Default color pallete
 export const DefaultPallete = {
     background: "#ECEFF1",
+    backgroundAddMode: "#C8E6C9",
+    backgroundDelMode: "#FFCDD2",
+    modeHeaderText: "#455A64",
     menuBackground: "#CFD8DC",
     tabBar: "#FAFAFA",
     tabBarText: "#BBDEFB",
     border: "#B0BEC5",
     title: "#455A64",
-    rhythmName: "#455A64",
+    rhythmName: "#FAFAFA",
 
     loadingIndicator: "#673AB7",
 

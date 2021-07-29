@@ -152,7 +152,7 @@ class rhythmVisualizer extends React.Component {
         return (
             <View style={[containerStyle,]}>
                 {/* the -15% marginTop will center the visualizer inside parent */}
-                <View style={{marginTop: '-10%'}}> 
+                <View style={{marginTop: -this.playButtonHeight + 20*getDeviceNormFactor()}}> 
                     {/* DRAW RINGS */}
                     { this.renderRings().reverse() }
                     
@@ -500,7 +500,8 @@ const styles = StyleSheet.create({
         fontWeight: '300',
     },
     clockfaceBeatNum: {
-        fontSize: 24 * getDeviceNormFactor(),
+        fontSize: 23 * getDeviceNormFactor(),
+        fontWeight: '300',
         color: DefaultPallete.clockfaceText,
         marginTop: -15,
         marginLeft: -8
