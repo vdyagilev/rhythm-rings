@@ -189,8 +189,18 @@ function RingView(props) {
     // Popup menu variables
     const [ menuVisible, setMenuVisible ] = useState(false)
 
+
+    // WIDTH OF POPUP MENU ITEMS
+    const popupMenuItemWidth = getViewWidth()*0.64
+
     return (
         // Visible Circle
+
+        <TouchableOpacity
+                delayLongPress={LONGPRESS_LENGTH}
+                onLongPress={() => setMenuVisible(!menuVisible)}
+                >
+                
         <CircleView style={{
                 borderRadius: radius, width: radius*2, height: radius*2, 
                 backgroundColor: ringColor, 
@@ -198,14 +208,8 @@ function RingView(props) {
                 position: 'absolute',
                 left: ringLeft, top: ringTop,
             }}>
-            <TouchableOpacity
-                delayLongPress={LONGPRESS_LENGTH}
-                onLongPress={() => setMenuVisible(!menuVisible)}>
-
-                    <View style={{ borderRadius: radius, width: radius*2, height: radius*2, 
-                    position: 'absolute', left: -radius, top: -width}}/>
-
-            </TouchableOpacity>
+            
+           
             
             {/* Inner circle (so that Visible circle is just a Stroke (borderline))  */}
             <View style={{borderRadius: radius, width: (radius-width)*2, 
@@ -223,10 +227,11 @@ function RingView(props) {
                     <ChooseColorView 
                         containerStyle={[styles.settingItem, {
                         paddingVertical: 5,
-                        width: getViewWidth()*0.8 // use real-value for ScrollView to work
+                        width: popupMenuItemWidth // use real-value for ScrollView to work
                         }]} 
                         onChoose={c => onUpdateRingColor(c)} 
                         selectedColor={ringColor} 
+                        extraColors={[DefaultPallete.ring, DefaultPallete.ring_alt]}
                     />
                 </View>
 
@@ -237,7 +242,7 @@ function RingView(props) {
                     <ChooseColorView 
                         containerStyle={[styles.settingItem, {
                         paddingVertical: 5,
-                        width: getViewWidth()*0.8 // use real-value for ScrollView to work
+                        width: popupMenuItemWidth // use real-value for ScrollView to work
                         }]} 
                         onChoose={c => onUpdateCommonColor(c)} 
                         selectedColor={pulseCommonColor} 
@@ -263,7 +268,7 @@ function RingView(props) {
                     <Text style={styles.settingText}>Sound</Text>
                     <ChooseSoundView 
                         containerStyle={[styles.settingItem, {
-                        width: getViewWidth()*0.64 // use real-value for react-native-picker to be proper width
+                        width: popupMenuItemWidth // use real-value for react-native-picker to be proper width
                         }]} 
                         onChoose={(s) => onUpdateCommonSound(s) } 
                         selectedSound={pulseCommonSound} 
@@ -275,6 +280,7 @@ function RingView(props) {
             {/************ Edit Pulse popup modal **********/}
 
         </CircleView>
+        </TouchableOpacity>
     )
 }
 
@@ -354,7 +360,7 @@ function PulseView(props) {
 }
 
 function ChooseColorView(props) {
-    const { onChoose, selectedColor, containerStyle, noShading } = props
+    const { onChoose, selectedColor, containerStyle, noShading, extraColors } = props
 
     const renderColor = (hex) => {
     // render colour as a circle view that is a button and has on-selected shading property
@@ -364,19 +370,20 @@ function ChooseColorView(props) {
         }
         return (
             <TouchableOpacity key={hex} onPress={() => onChoose(hex)}> 
-                <CircleView style={{marginRight: 10, backgroundColor: 'white', height: 50, width: 50, position: 'absolute'}}/>
-                <CircleView style={{marginRight: 10, backgroundColor: hex, height: 50, width: 50, opacity: shading}}/>
+                <CircleView style={{margin: 5, backgroundColor: 'white', height: 50, width: 50, position: 'absolute'}}/>
+                <CircleView style={{margin: 5, backgroundColor: hex, height: 50, width: 50, opacity: shading}}/>
             </TouchableOpacity>
         )
     }
 
-    const colors = [ DefaultPallete.jerryGarcia, DefaultPallete.bobWeir, DefaultPallete.pigpen, DefaultPallete.billKruetzmann, DefaultPallete.philLesh, DefaultPallete.robertHunter, DefaultPallete.mickeyHart ]
-
+    var colors = [ DefaultPallete.jerryGarcia, DefaultPallete.bobWeir, DefaultPallete.pigpen, DefaultPallete.billKruetzmann, DefaultPallete.philLesh, DefaultPallete.robertHunter, DefaultPallete.mickeyHart ]
+    if (extraColors && extraColors.length > 0){ 
+        colors = extraColors.concat(colors) 
+    }
     return (
         <ScrollView 
             horizontal={true}
             style={containerStyle}
-            contentContainerStyle={containerStyle}
         >
             { colors.map(hex => renderColor(hex)) }
         </ScrollView>
