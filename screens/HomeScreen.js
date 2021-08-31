@@ -14,6 +14,7 @@ import { ChooseRhythmScreen } from './ChooseRhythmScreen';
 import { DefaultStyling } from './Styles';
 import { PLAY_MODE, ADD_RING_MODE, ADD_PULSE_MODE, DEL_PULSE_MODE, DEL_RING_MODE, GAME_MODES } from './Constants'
 import { buildRhythmFromJson, DEFAULT_RHYTHMS_IN_JSON, nameInLibrary } from '../data_structures/RhythmLibrary';
+import { MAX_NUM_RINGS } from '../ui/Constants';
 
 class _HomeScreen extends React.Component {  
   // { navigation, dispatch, isPlaying, rhythm, bpm} = props
@@ -283,8 +284,15 @@ class _HomeScreen extends React.Component {
               item1={<AntDesign name="pluscircleo" size={actionButtonSize} color={createActionColor}/>} 
               item2={<Text style={styles.button_text}>Add Ring</Text>}
               onPress={() => {
-                this.setState({mode: ADD_RING_MODE}); 
-                onAddRing.bind(this)()}
+                // ENSURE NUMBER OF RINGS IS BELOW MAXIMUM!
+                console.log(rhythm.rings.length)
+                if (rhythm.rings.length >= (MAX_NUM_RINGS)) {
+                  // Alert user!
+                  Alert.alert("Number of Rings is Capped at " + MAX_NUM_RINGS)
+                } else {
+                  this.setState({mode: ADD_RING_MODE}); 
+                  onAddRing.bind(this)()}
+                }
               }
               containerStyle={styles.action_button}
             />

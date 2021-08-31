@@ -196,4 +196,4 @@ export const WhenTheLeeveeBreaks = {
 }
 
 // ******* CREATE STRUCTS FROM JSON FILES *************
-export const DEFAULT_RHYTHMS_IN_JSON = [DebuggerRhythm]//, BillieJean, TheFunkyDrummer, ImpeachThePresident, WhenTheLeeveeBreaks]
+export const DEFAULT_RHYTHMS_IN_JSON = [DebuggerRhythm, BillieJean, TheFunkyDrummer, ImpeachThePresident, WhenTheLeeveeBreaks]

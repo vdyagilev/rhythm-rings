@@ -142,7 +142,7 @@ class rhythmVisualizer extends React.Component {
 
         const firstPos = {
             X: ringLeft + RING_INNERMOST_DIST, 
-            Y: ringTop + (rings.length+1)*(RING_WIDTH+RING_SHIFT_DIST) - 20*getDeviceNormFactor()
+            Y: ringTop + (rings.length+1)*(RING_SHIFT_DIST) + 2*RING_WIDTH 
         }
         const clockhandTipXY = getPosOnCircle(length, (length/2) + clockhandIdx, firstPos, ringCenter)
 
@@ -168,24 +168,21 @@ class rhythmVisualizer extends React.Component {
         const firstLabelPos = {
             X: ringCenter.X, 
             // first label at the top
-            Y: ringBot - (rings.length+1)*(2*RING_WIDTH+RING_SHIFT_DIST)
-                + (30*getDeviceNormFactor())
+            Y: ringBot - (rings.length+1)*(RING_SHIFT_DIST) - RING_WIDTH + (-34*getDeviceNormFactor())
         } 
         
         var views = []
         for (let i=0; i<length; i++) {
             const { X, Y } = getPosOnCircle(length, i, firstLabelPos, ringCenter)
             // draw a text label for each half step. Integer on even num "+" on odd,
-            if (i % 2 == 0) {
-                views.push((
-                <Text 
-                    key={i} 
-                    style={[styles.clockfaceBeatNum, {position: 'absolute', left: X, top: Y}]}
-                    >{(i/2)+1}
-                </Text>))
-            } else {
-                views.push((<Text key={i} style={[styles.clockfaceBeatNum, {position: 'absolute', left: X, top: Y}]}>+</Text>))
-            }
+            const text = (i % 2 == 0) ? (i/2)+1 : "+"
+            views.push((
+            <Text 
+            key={i} 
+            style={[
+                styles.clockfaceBeatNum, 
+                {position: 'absolute', left: X, top: Y}]
+            }> { text }</Text>))
         }
         return views
     }
@@ -616,7 +613,7 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         color: DefaultPallete.clockfaceText,
         marginTop: -15 * getDeviceNormFactor(),
-        marginLeft: -8 * getDeviceNormFactor(),
+        marginLeft: -13 * getDeviceNormFactor(),
     },
     // popup menu
     settingText: {
