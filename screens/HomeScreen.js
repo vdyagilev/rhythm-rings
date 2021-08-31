@@ -3,13 +3,17 @@ import { createStackNavigator } from '@react-navigation/stack';
 import * as React from 'react';
 import { ActivityIndicator, Alert, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { connect } from 'react-redux';
-import { bpmToMilli, getActivePulses, getDeviceNormFactor, loopIncrement, playPulses } from '../Helpers';
-import { loadSoundCache, setEditMode, setIsPlaying, unloadSoundCache } from '../storage/Actions';
-import { PlayButton, SetBPMButton, TwoItemButton } from '../ui/Buttons';
+import { createNewRing } from '../data_structures/Structs';
+import { bpmToMilli, getActivePulses, getDeviceNormFactor, getViewHeight, getViewWidth, loopIncrement, playPulses } from '../Helpers';
+import { addRingToRhythm, loadSoundCache, saveRhythmToLibrary, setIsPlaying, unloadSoundCache } from '../storage/Actions';
+import { doesRhythmHaveTwin, getBPM, getIsPlaying, getRhythmLibrary, getSelectedRhythm, getSoundCache, isRhythmInLibrary } from '../storage/Reducers';
+import { PlayButton, SetBPMButton, TextButton, TwoItemButton } from '../ui/Buttons';
 import { DefaultPallete } from '../ui/Colors';
 import { RhythmVisualizer } from '../ui/Visualizer';
 import { ChooseRhythmScreen } from './ChooseRhythmScreen';
 import { DefaultStyling } from './Styles';
+import { PLAY_MODE, ADD_RING_MODE, ADD_PULSE_MODE, DEL_PULSE_MODE, DEL_RING_MODE, GAME_MODES } from './Constants'
+import { buildRhythmFromJson, DEFAULT_RHYTHMS_IN_JSON, nameInLibrary } from '../data_structures/RhythmLibrary';
 
 class _HomeScreen extends React.Component {  
   // { navigation, dispatch, isPlaying, rhythm, bpm} = props
@@ -18,7 +22,7 @@ class _HomeScreen extends React.Component {
     this.state = {
       onBeat: 0,
       timerID: -1,
-      mode: "play",
+      mode: PLAY_MODE,
       // which mode we're in. modes = ["play", "add_ring", "del_ring", "add_pulse", "del_pulse"]
       
       // bool indicator for loading sounds
@@ -31,8 +35,21 @@ class _HomeScreen extends React.Component {
   
 
   componentDidMount() {
+    const { rhythmLibrary, dispatch } = this.props
+
+    // add all default rhythms into rhythm library if they not in yet
+    for (let i=0; i<DEFAULT_RHYTHMS_IN_JSON.length; i++) {
+      const rhythmJson = DEFAULT_RHYTHMS_IN_JSON[i]
+      const rhythm = buildRhythmFromJson(rhythmJson)
+
+      if (!isRhythmInLibrary(rhythm.name, rhythmLibrary)) {
+        dispatch( saveRhythmToLibrary(rhythm) )
+      }
+    }
+
     // Cache all sounds used in current rhythm
-    this.props.dispatch( loadSoundCache() )
+    dispatch( loadSoundCache() )
+
   }
 
 
@@ -48,7 +65,7 @@ class _HomeScreen extends React.Component {
   // Play button actions
   startGame() {
     // set mode back to play mode
-    this.setState({mode: "play"})
+    this.setState({mode: PLAY_MODE})
 
     this.props.dispatch(setIsPlaying(true))
     this.tick()
@@ -56,15 +73,11 @@ class _HomeScreen extends React.Component {
 
   stopGame() {
     // set mode back to play mode
-    this.setState({mode: "play"})
+    this.setState({mode: PLAY_MODE})
 
     this.props.dispatch(setIsPlaying(false))
     this.clearTimer()
   }
-
-  setMode(mode) {
-    this.props.dispatch(setEditMode(mode))
-  } 
 
   // Moving forward in time 
   tick() {
@@ -99,7 +112,7 @@ class _HomeScreen extends React.Component {
 
   async closeChooseRhythmScreenModal() {
     // load new sounds
-    this.loadSounds.bind(this)()
+    this.props.dispatch( loadSoundCache() )
 
     // hide modal
     this.setState({showChooseRhythmScreen: false})
@@ -115,6 +128,8 @@ class _HomeScreen extends React.Component {
 
   onPressSaveFile() {
     // open alert to save custom rhythm with a name
+    const { dispatch, rhythm, rhythmLibrary } = this.props
+    const saveRhythm = () => dispatch( saveRhythmToLibrary(rhythm) )
     
     Alert.prompt(
       "Save your Rhythm",
@@ -125,7 +140,26 @@ class _HomeScreen extends React.Component {
           onPress: () => {},
           style: "cancel"
         },
-        { text: "OK", onPress: () => { }}// TODO:  } }
+        { text: "OK", onPress: (text) => {
+          // If we have saved under same name, notify user to supply different name
+          if (isRhythmInLibrary(text, rhythmLibrary)){
+            Alert.alert(
+              "Name Unavailable",
+              "There is an existing rhythm under this name!",
+              [
+                {
+                  text: "Cancel",
+                  onPress: () => {},
+                  style: "cancel"
+                },
+                { text: "OK", onPress: () => console.log("OK Pressed") }
+              ]
+            )
+          } else {
+            // Add it into rhythm library as a new rhythm
+            saveRhythm()
+          }
+        }}
       ]
     );
   }
@@ -133,10 +167,10 @@ class _HomeScreen extends React.Component {
   render() {
     // Action button styling
     const actionButtonSize = 24*getDeviceNormFactor()
-    const createActionColor = DefaultPallete.playButton
-    const deleteActionColor = DefaultPallete.stopButton
+    const createActionColor = DefaultPallete.addButton
+    const deleteActionColor = DefaultPallete.delButton
 
-    const { navigation, dispatch, isPlaying, rhythm, bpm} = this.props
+    const { navigation, dispatch, isPlaying, rhythm, rhythmLibrary, bpm} = this.props
     
     // When loading return loading indicator
     if (this.state.isLoading) {
@@ -149,66 +183,88 @@ class _HomeScreen extends React.Component {
 
     // Switch between the homescreen modes with different ui's. modes = ["play", "add_ring", "del_ring", "add_pulse", "del_pulse"]
     var backgroundColor = DefaultPallete.background
-    var modeHeader 
-    var onTouchFn
+    var modeHeader
+  
     switch (this.state.mode) {
-      case "play":
+      case PLAY_MODE:
         modeHeader = null
-        onTouchFn = null
         break
 
-      case "add_ring":
-        backgroundColor = DefaultPallete.backgroundAddMode
-        modeHeader = (<Text style={styles.modeHeaderText}>Tap to Add Ring</Text>)
-        //onTouchFn = // TODO:
-        break
-
-      case "del_ring":
+      case DEL_RING_MODE:
         backgroundColor = DefaultPallete.backgroundDelMode
         modeHeader = (<Text style={styles.modeHeaderText}>Tap to Delete Ring</Text>)
         break
 
-      case "add_pulse":
+      case ADD_PULSE_MODE:
         backgroundColor = DefaultPallete.backgroundAddMode
         modeHeader = (<Text style={styles.modeHeaderText}>Tap to Add Pulse</Text>)
         break
 
-      case "del_pulse":
+      case DEL_PULSE_MODE:
         backgroundColor = DefaultPallete.backgroundDelMode
         modeHeader = (<Text style={styles.modeHeaderText}>Tap to Delete Pulse</Text>)
         break
 
       default:
+        modeHeader = null
         break
     }
+
+    // only used used for add_ring (as there is no user mode, the button press calls onAddRing())
+    const onAddRing = () => {
+      const rhythm = this.props.rhythm
+      const ring = createNewRing(rhythm.length)
+      const outermostIdx = rhythm.rings.length 
+
+      dispatch(  addRingToRhythm(outermostIdx, ring) )  
+    }
+
+    // visualier uses real pixel values so pass those bad boys in
+    const visualizerDim = {width: getViewWidth(), height: getViewHeight()}
+
+    // if selectedRhythm is directly from library, display its name. 
+    // if its edited => custom, display "Custom"
+
+    // TODO: make work 
+    const isRhythmNew = !doesRhythmHaveTwin(rhythm, rhythmLibrary)
+    const rhythmName = isRhythmNew ? "Custom" : rhythm.name 
+
 
     return (
       <View style={ [DefaultStyling.screen, {backgroundColor: backgroundColor}] }>
 
+      { modeHeader ? (
+        <View style={[styles.info_container, {flexDirection: 'column'} ]}>
+            <TextButton text={"Back"} onPress={() => this.setState({mode: PLAY_MODE})} textStyle={styles.textButton} containerStyle={{flex: 0}}/>
+            { modeHeader }
+        </View>
+      ) : (
         <View style={styles.info_container}>
+          
           <View style={{paddingTop: 10, justifyContent: 'space-evenly', alignSelf: 'flex-start', alignItems: 'center', }}>
-            <TouchableOpacity style={[styles.iconButton, {paddingBottom: 10, marginLeft: -5}]} onPress={ this.onPressSaveFile.bind(this) }>
-              <AntDesign name="addfile" size={28 * getDeviceNormFactor()} color={DefaultPallete.iconButton} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton} onPress={ this.toggleChooseRhythmScreenModal.bind(this) }>
+            <TouchableOpacity style={[styles.iconButton,{paddingBottom: 10, }]} onPress={ this.toggleChooseRhythmScreenModal.bind(this) }>
               <Ionicons name="library-outline" size={28 * getDeviceNormFactor()} color={DefaultPallete.iconButton} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.iconButton, ]} onPress={ this.onPressSaveFile.bind(this) }>
+              <AntDesign name="addfile" size={28 * getDeviceNormFactor()} color={DefaultPallete.iconButton} />
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.rhythm_name}>{rhythm.name}</Text>
+          <Text style={styles.rhythm_name}>{rhythmName}</Text>
 
-
-          <View style={{alignItems:'center'}}>
+          <View style={{alignItems:'center', paddingBottom: 5}}>
             <Text style={styles.bpmTitle}>BPM</Text>
             <SetBPMButton />
           </View>
 
-        </View>
+        </View>        
+      ) }
 
         <RhythmVisualizer 
           rhythm={rhythm} 
           clockhandIdx={ this.state.onBeat } 
-          containerStyle={styles.visualizer_container}
+          containerStyle={[styles.visualizer_container, visualizerDim]}
+          mode={this.state.mode}
           />
 
         <PlayButton 
@@ -226,27 +282,29 @@ class _HomeScreen extends React.Component {
             <TwoItemButton 
               item1={<AntDesign name="pluscircleo" size={actionButtonSize} color={createActionColor}/>} 
               item2={<Text style={styles.button_text}>Add Ring</Text>}
-              onPress={() => this.setState({mode: "add_ring"})} containerStyle={styles.action_button}
+              onPress={() => {
+                this.setState({mode: ADD_RING_MODE}); 
+                onAddRing.bind(this)()}
+              }
+              containerStyle={styles.action_button}
             />
             <TwoItemButton 
               item1={<AntDesign name="minuscircleo" size={actionButtonSize} color={deleteActionColor}/>} 
               item2={<Text style={styles.button_text}>Del Ring</Text>}
-              onPress={() => this.setState({mode: "del_ring"})} containerStyle={styles.action_button}
+              onPress={() => this.setState({mode: DEL_RING_MODE})} containerStyle={styles.action_button}
             />
             <TwoItemButton 
               item1={<AntDesign name="pluscircle" size={actionButtonSize} color={createActionColor}/>} 
               item2={<Text style={styles.button_text}>Add Pulse</Text>}
-              onPress={() => this.setState({mode: "add_pulse"})} containerStyle={styles.action_button}
+              onPress={() => this.setState({mode: ADD_PULSE_MODE})} containerStyle={styles.action_button}
             />
             <TwoItemButton 
               item1={<AntDesign name="minuscircle" size={actionButtonSize} color={deleteActionColor}/>} 
               item2={<Text style={styles.button_text}>Del Pulse</Text>}
-              onPress={() => this.setState({mode: "del_ring"})} containerStyle={styles.action_button}
+              onPress={() => this.setState({mode: DEL_PULSE_MODE})} containerStyle={styles.action_button}
             />
           </View>
         </View>
-
-        { modeHeader }
 
         {/* *********** ChooseRhythmScreen Modal *************/}
 
@@ -271,10 +329,11 @@ class _HomeScreen extends React.Component {
 // Connect View to Redux store
 const mapStateToProps = (state, props) => {
   return { 
-    isPlaying: state.isPlaying,
-    rhythm: state.selectedRhythm,
-    bpm: state.bpm,
-    sounds: state.soundCache
+    isPlaying: getIsPlaying(state),
+    rhythm: getSelectedRhythm(state),
+    bpm: getBPM(state),
+    sounds: getSoundCache(state),
+    rhythmLibrary: getRhythmLibrary(state),
   }
 }
 HomeScreen = connect(mapStateToProps)(_HomeScreen)
@@ -284,33 +343,57 @@ const HomeStack = createStackNavigator();
 export function HomeStackScreen() {
   return (
     <HomeStack.Navigator>
-      <HomeStack.Screen name="RHYTHM" component={HomeScreen} />
+      <HomeStack.Screen 
+        name="RHYTHM" 
+        component={HomeScreen} 
+        options={{
+          title: 'RHYTHM',
+          headerStyle: {
+            backgroundColor: DefaultPallete.headerBackground,
+          },
+          headerTintColor: DefaultPallete.headerText,
+          headerTitleStyle: {
+            fontWeight: 'bold',
+            fontSize: 18 * getDeviceNormFactor(),
+            fontWeight: '800',
+          },
+        }}
+      />
     </HomeStack.Navigator>
   );
 }
 
 const styles = StyleSheet.create({
+  textButton: {
+    textDecorationLine: 'underline',
+    width: '100%',
+    textAlign: 'center',
+    fontSize: 16 * getDeviceNormFactor(),
+    fontWeight: '300',
+    color: DefaultPallete.textButton,
+    paddingBottom: 3 * getDeviceNormFactor(),
+    paddingTop: 5 * getDeviceNormFactor()
+  },
     modeHeaderText: {
-      position: 'absolute',
       width: '100%',
+      paddingVertical: '5%',
       textAlign: 'center',
-      top: '12%',
-      fontSize: 18 * getDeviceNormFactor(),
-      fontWeight: '300',
-      color: DefaultPallete.modeHeaderText,
+      fontSize: 22 * getDeviceNormFactor(),
+      fontWeight: '500',
+      color: DefaultPallete.title,
     },
     action_buttons_container: {
       flex: 1,
       flexDirection: 'row',
       alignContent: 'center',
       justifyContent: 'space-between',
-      padding: 10,
-      paddingTop: 15,
+      padding: 10*getDeviceNormFactor(),
     },
     button_text: {
       color: DefaultPallete.buttonText,
       fontSize: 12 * getDeviceNormFactor(),
       paddingVertical: 5*getDeviceNormFactor(),
+      fontWeight: '700',
     },
     action_button: {
 
@@ -319,13 +402,14 @@ const styles = StyleSheet.create({
     menu_container: {
       height: "10%",
       width: "100%",
-      backgroundColor: DefaultPallete.menuBackground,
+      backgroundColor: DefaultPallete.buttonMenuBackground,
     },
     info_container: {
       flexDirection: 'row',
       width: '100%', 
       justifyContent: 'space-between',
-      padding: 10,
+      paddingTop: 5,
+      paddingHorizontal: 10,
       alignItems: 'center',
       backgroundColor: DefaultPallete.menuBackground,
     },
@@ -333,21 +417,20 @@ const styles = StyleSheet.create({
     // Rhythm Visualizer
     visualizer_container: {
       flex: 1,
-      width: '95%', // %5 acts as horizontal margin
-      marginVertical: "2.5%",
-      // inside visualizer there is also some sizing properties
-    // NOTE: inner content is done with absolute positioning due to animation
+      paddingLeft: 10*getDeviceNormFactor()
     },
 
     rhythm_name: {
-      fontSize: 18*getDeviceNormFactor(),
+      fontSize: 21*getDeviceNormFactor(),
       color: DefaultPallete.rhythmName,
-      fontWeight: '500',
+      fontWeight: '700',
     },
     bpmTitle: {
-      fontSize: 10 * getDeviceNormFactor(),
+      fontSize: 1 * getDeviceNormFactor(),
       color: DefaultPallete.rhythmName,
       paddingBottom: 5,
+      fontSize: 12*getDeviceNormFactor(),
+      fontWeight: '600',
     },
     iconButton: {
     }

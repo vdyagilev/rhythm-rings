@@ -1,5 +1,4 @@
-import { Audio } from 'expo-av';
-import { Dimensions, PixelRatio } from 'react-native';
+import { Dimensions } from 'react-native';
 
 // Dynamic device dimensions
 export function getScreenWidth() { return Dimensions.get('screen').width }
@@ -56,6 +55,9 @@ export async function playPulses(pulses, sounds) {
             // found some avaliable sounds
             const sound = cacheSounds[0]    
             return sound
+        
+        } else {
+            return null
         }
 
     }
@@ -76,16 +78,23 @@ export async function playPulses(pulses, sounds) {
     for (let i=0; i<pulses.length; i++) {
         const pulse = pulses[i] 
         // grab loaded sound by pulse name
-        const { sound, id, file, isPlaying } = findSoundInCache(pulse.sound)
+        const cacheSound = findSoundInCache(pulse.sound)
 
-        markCacheSoundIsPlaying(sound.id, true)
+        if (cacheSound != null) {
+            const { sound, id, file, isPlaying } = cacheSound
 
-        // reset position of sound to 0 (MUST BE DONE OR DOESNT PLAY!)
-        sound.setPositionAsync(0)
-        // play sound
-        .then(() => sound.playAsync())
-        // mark sound as finished playing in cache ref obj
-        .then(() => markCacheSoundIsPlaying(sound.id, false))
+            markCacheSoundIsPlaying(sound.id, true)
+
+            // reset position of sound to 0 (MUST BE DONE OR DOESNT PLAY!)
+            sound.setPositionAsync(0)
+            // play sound
+            .then(() => sound.playAsync())
+            // mark sound as finished playing in cache ref obj
+            .then(() => markCacheSoundIsPlaying(sound.id, false))
+        
+        } else {
+            console.error("Cache Error: Sound (id #" + pulse.sound + ") Not Found")
+        }
     }
 }
 
@@ -106,15 +115,19 @@ export function transposeAudio(semitones) {
     return speed 
 }
 
-export function getCommonRingProperty(ring, pulsePropFn) {
+export function getCommonRingProperty(ring, getPropFunc) {
     var common = null
+
     for (let i=0; i<ring.length; i++) {
         const pulse = ring.beats[i]
+
         if (pulse != ring.restValue) {
-            const prop = pulsePropFn(pulse)
-            if (i == 0) {
+            const prop = getPropFunc(pulse)
+
+            if (!common) {
                 // first obj
                 common = prop
+                
             } else {
                 // compare with common
                 if (common != prop) {
@@ -124,4 +137,88 @@ export function getCommonRingProperty(ring, pulsePropFn) {
         }
     }
     return common
+}
+
+export function angleFromCircleCentreAndEdge(centerPos, edgePos, inDegrees) {
+    // return angle between centerPos and edgePos in radians
+    // https://stackoverflow.com/questions/22888773/how-to-get-angle-of-point-from-center-point
+    var angle = Math.atan2(centerPos.Y-edgePos.Y, centerPos.X-edgePos.X)
+
+    // Add extra functions into Math package
+    // Convert from degrees to radians.
+    Math.radians = function(degrees) {
+        return degrees * Math.PI / 180;
+    }
+    // Convert from radians to degrees.
+    Math.degrees = function(radians) {
+        return radians * 180 / Math.PI;
+    }
+
+    if (inDegrees) {
+        angle = Math.degrees(angle) % 360
+    }
+    return angle
+}
+
+export function calculateBeatIdxFromRingTouch(locationX, locationY, topPos, centerPos, numBeats) {
+    // Given that topPos is the top of Ring with numBeats, and centerPos the center, calculate which beatIdx the touch was in
+    // Pos: {X: num, Y: num}, returns: {inSlice: false, inCircle: false, beatIdx: -1}
+
+    for (let b=0; b<(numBeats-1); b++) {
+        // Calculate left and right slice coordinates of the circle pizza slice
+        var edgePosStart = getPosOnCircle(numBeats, b, topPos, centerPos)
+        var edgePosEnd = getPosOnCircle(numBeats, b+1, topPos, centerPos)
+        
+        // convert boundaries from points to angles
+        const startAngle = angleFromCircleCentreAndEdge(centerPos, edgePosStart, false)
+        const endAngle = angleFromCircleCentreAndEdge(centerPos, edgePosEnd, false)
+        
+        // calculate if point is inside this pie slice
+        const ringRadius = Math.abs(topPos.X - centerPos.X)
+        const { inCircle, inSlice } = pointInPieSlice(centerPos, ringRadius, {X: locationX, Y: locationY}, startAngle, endAngle)
+
+        // return if inSlice
+        if (inSlice) {
+            return {inSlice: true, inCircle: true, beatIdx: b}
+        }
+
+        // console.log("\ntouch (x,y)", locationX, locationY)
+        // console.log("Beat Num:", b)
+        // console.log("(edgePosStart, edgePosEnd)", edgePosStart, edgePosEnd)
+        // console.log("(startAngle, endAngle)", startAngle, endAngle)
+        // console.log("(ringRadius, inCircle, inSlice)", ringRadius, inCircle, inSlice)
+        // console.log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    
+    }
+    return {inSlice: false, inCircle: false, beatIdx: -1}
+}
+
+export function pointInPieSlice(centerPos, radius, pointPos, startAngle, endAngle) {
+    // Returns {inCircle: bool, inSlice: bool}
+
+    // https://stackoverflow.com/questions/6270785/how-to-determine-whether-a-point-x-y-is-contained-within-an-arc-section-of-a-c
+    const R = Math.sqrt(Math.pow((pointPos.X - centerPos.X), 2) + Math.pow((pointPos.Y - centerPos.Y), 2))
+    const A = Math.atan2(pointPos.Y - centerPos.Y, pointPos.X - centerPos.X)
+    
+    if (R > radius) {
+        // outside the circle entirely 
+        return {inCircle: false, inSlice: false} 
+    } 
+
+    if (startAngle < endAngle) {
+        if (startAngle < A && A < endAngle) {
+            // inside
+            return {inCircle: true, inSlice: true}
+        }
+    } else {
+        if (A > startAngle) {
+            // inside
+            return {inCircle: true, inSlice: true}
+        } else if (A < endAngle) {
+            // inside
+            return {inCircle: true, inSlice: true}
+        }
+    }
+    // else outside
+    return {inCircle: true, inSlice: false}
 }

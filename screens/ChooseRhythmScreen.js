@@ -1,46 +1,50 @@
-import { getRhythmCategory, RHYTHM_LIBRARY, RHYTHM_LIBRARY_CATEGORIES } from "../data_structures/RhythmLibrary"
+import * as React from 'react'
+import { SectionList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { connect } from "react-redux"
+import { buildRhythmFromJson } from '../data_structures/RhythmLibrary'
+import { getDeviceNormFactor } from "../Helpers"
 import { setSelectedRhythm } from "../storage/Actions"
+import { getRhythmLibrary, getSelectedRhythm } from '../storage/Reducers'
 import { DefaultPallete } from "../ui/Colors"
 import { DefaultStyling } from "./Styles"
-import { View, StyleSheet, SectionList, Text, TouchableOpacity } from 'react-native'
-import { connect } from "react-redux"
-import * as React from 'react';
-import { getDeviceNormFactor, getViewWidth } from "../Helpers"
 
 // Generate data for the sectionlist by listing rhythms form rhythm library by category
-const SectionListData = (() => {
+const makeSectionListData = (rhythmLibrary) => {
     const data = []
+    const categoriesFilled = [] // used to keep categories a unique set
     // initialize data with category names and empty lists
-    for (let i=0; i<RHYTHM_LIBRARY_CATEGORIES.length;i++) {
-        const catObj = RHYTHM_LIBRARY_CATEGORIES[i]
-        data.push( 
-            {
-                title: catObj.name, 
+    for (let i=0; i<rhythmLibrary.length;i++) {
+        const rhythm = rhythmLibrary[i]
+        const category = rhythm.category
+        if (categoriesFilled.indexOf(category) == -1) {
+            data.push({
+                title: rhythm.category, 
                 data: []
-            } 
-            )
+            })
+            categoriesFilled.push(category)
+        }        
     }
     // add rhythms into respective lists
-    for (let i = 0; i< RHYTHM_LIBRARY.length; i++) {
-        const rhythm = RHYTHM_LIBRARY[i]
-        const catName = getRhythmCategory(rhythm)
+    for (let i=0; i<rhythmLibrary.length; i++) {
+        const rhythm = rhythmLibrary[i]
+        const category = rhythm.category
 
-        for (let j =0; j < data.length; j++) {
-            if (data[j].title == catName) {
+        for (let j=0; j<data.length; j++) {
+            if (data[j].title == category) {
                 // located
                 data[j].data.push(rhythm)
             }
         }
     }
     return data
-})()
+}
 
 function _ChooseRhythmScreen(props) {
-    const {selected, dispatch, onClose} = props
+    const {selectedRhythm, dispatch, onClose, rhythmLibrary} = props
 
     const onSelect = (rhythmName) => {
         // select rhythm and dispatch update to redux store
-        const rhythm = RHYTHM_LIBRARY.filter(r => r.name == rhythmName)[0]
+        const rhythm = rhythmLibrary.filter(r => r.name == rhythmName)[0]
         dispatch( setSelectedRhythm(rhythm) )
 
         // close modal
@@ -48,8 +52,9 @@ function _ChooseRhythmScreen(props) {
     }
 
     const renderListItem = ({ item }) => {
-        // change container style depending on item being selected
-        const containerStyle = (selected.name == item.name) ? styles.selectedItemContainer : styles.unselectedItemContainer
+        // switch background color depending on selected
+        const containerStyle =(selectedRhythm.name == item.name) ? styles.selectedItemContainer : styles.unselectedItemContainer
+        
         return (
             <TouchableOpacity style={containerStyle} onPress={() => onSelect(item.name)}>
                 <Text style={styles.itemText}>{item.name}</Text>
@@ -61,6 +66,8 @@ function _ChooseRhythmScreen(props) {
             <Text style={styles.headerText}>{title}</Text>
         )
     }
+
+    const sectionListData = makeSectionListData(rhythmLibrary)
 
     return (
         <View style={DefaultStyling.screen}>
@@ -74,10 +81,10 @@ function _ChooseRhythmScreen(props) {
             <SectionList
                 containerStyle={styles.sectionList}
                 contentContainerStyle={styles.sectionList}
-                sections={SectionListData}
+                sections={ sectionListData }
                 keyExtractor={(item, index) => item + index}
-                renderItem={renderListItem}
-                renderSectionHeader={renderListSectionHeader}
+                renderItem={ renderListItem }
+                renderSectionHeader={ renderListSectionHeader }
             >
 
             </SectionList>
@@ -126,7 +133,8 @@ const styles = StyleSheet.create({
 // Connect View to Redux store
 const mapStateToProps = (state, props) => {
     return { 
-        selected: state.selectedRhythm,
+        selectedRhythm: getSelectedRhythm(state),
+        rhythmLibrary: getRhythmLibrary(state),
     }
   }
 export const ChooseRhythmScreen = connect(mapStateToProps)(_ChooseRhythmScreen)

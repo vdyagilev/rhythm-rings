@@ -1,11 +1,16 @@
 import { Audio } from "expo-av"
 
+export const SET_COLOR_PALLETE = "SET_COLOR_PALLETE"
+export const setColorPallete = (pallete) => ({
+    type: SET_COLOR_PALLETE,
+    pallete: pallete,
+})
+
 export const SET_IS_PLAYING = "SET_IS_PLAYING"
 export const setIsPlaying = (isPlaying) => ({
     type: SET_IS_PLAYING,
     isPlaying: isPlaying
 })
-
 
 export const SET_BPM = "SET_BPM"
 export const setBPM = (bpm) => ({
@@ -80,7 +85,7 @@ export function addSoundFileCache (soundFile) {
 
 // each sound loaded by expo-av is duplicated
 // so that we can play the sound polyphonically
-export const NUM_REFS_TO_SOUND = 5 
+export const NUM_REFS_TO_SOUND = 5
 
 export function loadSoundCache() {
     return async (dispatch, getState) => {
@@ -139,3 +144,41 @@ export function unloadSoundCache() {
     }
 }
 
+export const ADD_RING_TO_RHYTHM = "ADD_RING_TO_RHYTHM"
+export const addRingToRhythm = (ringIdx, ring) => ({
+    type: ADD_RING_TO_RHYTHM,
+    ringIdx: ringIdx,
+    ring: ring
+})
+
+export const REMOVE_RING_FROM_RHYTHM = "REMOVE_RING_FROM_RHYTHM"
+export const removeRingFromRhythm = (ringID) => ({
+    type: REMOVE_RING_FROM_RHYTHM,
+    ringID: ringID
+})
+
+export const ADD_PULSE_TO_RHYTHM = "ADD_PULSE_TO_RHYTHM"
+export const addPulseToRhythm = (ringIdx, beatIdx, pulse) => ({
+    type: ADD_PULSE_TO_RHYTHM,
+    ringIdx: ringIdx,
+    beatIdx: beatIdx,
+    pulse: pulse
+})
+
+export const REMOVE_PULSE_FROM_RHYTHM = "REMOVE_PULSE_FROM_RHYTHM"
+export const removePulseFromRhythm = (pulseID) => ({
+    type: REMOVE_PULSE_FROM_RHYTHM,
+    pulseID: pulseID
+})
+
+export const SAVE_RHYTHM_TO_LIBRARY = "SAVE_RHYTHM_TO_LIBRARY"
+export const saveRhythmToLibrary = (rhythm) => ({
+    type: SAVE_RHYTHM_TO_LIBRARY,
+    rhythm: rhythm,
+})
+
+export const DELETE_RHYTHM_FROM_LIBRARY = "DELETE_RHYTHM_FROM_LIBRARY"
+export const deleteRhythmFromLibrary = (name) => ({
+    type: DELETE_RHYTHM_FROM_LIBRARY,
+    name: name,
+})

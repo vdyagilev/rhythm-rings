@@ -4,18 +4,36 @@
 // https://www.youtube.com/watch?v=tm2BgO1VaRY
 
 import { rangeWithDisclude } from "../Helpers"
-import { DefaultPallete } from "../ui/Colors"
+import { DEFAULT_PULSE_COLOR, DEFAULT_PULSE_COLOR_ALT, DEFAULT_PULSE_VOLUME, DEFAULT_RING_COLOR, DEFAULT_RING_COLOR_ALT } from "./Constants"
 import { DrumSounds } from "./Sounds"
 import { createRestBeats, Pulse, Rhythm, Ring } from "./Structs"
 
-// DEFAULT PROPERTIES FOR THE RHYTHMS
-export const DEFAULT_RING_LENGTH = 4
-export const DEFAULT_PULSE_VOLUME = 1
-export const DEFAULT_PULSE_ONBEAT_SOUND = DrumSounds.kick
-export const DEFAULT_PULSE_OFFBEAT_SOUND = DrumSounds.snare
-export const DEFAULT_PULSE_ONBEAT_COLOR = DefaultPallete.pulseOnbeat
-export const DEFAULT_PULSE_OFFBEAT_COLOR = DefaultPallete.pulseOffbeat
-export const DEFAULT_RING_COLOR = DefaultPallete.ring
+
+// from-json builder function
+export function buildRhythmFromJson(json) {
+    var rings = []
+    const numRings = json.rings.length
+    const numBeats = json.length
+    for (let i=0; i<numRings; i++){
+        const ringJson = json.rings[i]
+
+        // create struct objs from the json 
+        var ring = new Ring(numBeats, createRestBeats(numBeats, null), ringJson.ringColor)
+       
+
+        for (let j=0; j<ringJson.pulses.length; j++) {
+            const beatIdx = ringJson.pulses[j]
+            const pulse = new Pulse(ringJson.pulseVolume, ringJson.sound, ringJson.pulseColor)
+
+            ring.addPulse(beatIdx, pulse)
+        }
+
+        rings.push(ring)
+    }   
+
+    var rhythm = new Rhythm(rings, numBeats, json.name, json.category)
+    return rhythm
+}
 
 // *********** RHYTHM TEMPLATE ****************
 
@@ -34,29 +52,36 @@ export const DEFAULT_RING_COLOR = DefaultPallete.ring
 
 // *********** RHYTHM TEMPLATE ****************
 
-const DebuggerRhythm = {
+const DefaultRingVisuals = {
+    ringColor: DEFAULT_RING_COLOR,
+    pulseColor: DEFAULT_PULSE_COLOR,
+    pulseVolume: DEFAULT_PULSE_VOLUME
+}
+
+const DefaultRingVisualsAlt = {
+    ringColor: DEFAULT_RING_COLOR_ALT,
+    pulseColor: DEFAULT_PULSE_COLOR_ALT,
+    pulseVolume: DEFAULT_PULSE_VOLUME
+}
+
+export const DebuggerRhythm = {
     name: "Debugger Rhythm",
+    category: "Cat 1",
     rings: [
         {
             sound: DrumSounds.kick,
             pulses: [0, 1],
-            ringColor: DefaultPallete.ring,
-            pulseColor: DefaultPallete.billKruetzmann,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisuals
         },
         {
             sound: DrumSounds.snare,
             pulses: [2, 3],
-            ringColor: DefaultPallete.ring_alt,
-            pulseColor: DefaultPallete.pigpen,
-            pulseVolume: DEFAULT_PULSE_VOLUME/2
+            ...DefaultRingVisualsAlt
         },
         {
             sound: DrumSounds.closedHat,
             pulses: [1, 3],
-            ringColor: DefaultPallete.ring,
-            pulseColor: DefaultPallete.robertHunter,
-            pulseVolume: DEFAULT_PULSE_VOLUME/4
+            ...DefaultRingVisuals
         }
     ],
     length: 4,
@@ -66,29 +91,24 @@ const DebuggerRhythm = {
 
 // 8 STEPS (2 STEPS = 1 BEAT = (1e&a))
 
-const BillieJean = {
+export const BillieJean = {
     name: "Billie Jean",
+    category: "Cat 2",
     rings: [
         {
             sound: DrumSounds.kick,
             pulses: [0, 4],
-            ringColor: DefaultPallete.ring,
-            pulseColor: DefaultPallete.billKruetzmann,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisuals
         },
         {
             sound: DrumSounds.snare,
             pulses: [2, 6],
-            ringColor: DefaultPallete.ring_alt,
-            pulseColor: DefaultPallete.pigpen,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisualsAlt
         },
         {
             sound: DrumSounds.closedHat,
             pulses: [0, 1, 2, 3, 4, 5, 6, 7],
-            ringColor: DefaultPallete.ring,
-            pulseColor: DefaultPallete.robertHunter,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisuals
         }
     ],
     length: 8,
@@ -96,146 +116,84 @@ const BillieJean = {
 
 // 16 STEPS 
 
-const TheFunkyDrummer = {
+export const TheFunkyDrummer = {
     name: "The Funky Drummer",
+    category: "Cat 2",
     rings: [
         {
             sound: DrumSounds.kick,
             pulses: [0, 2, 6, 10, 13],
-            ringColor: DefaultPallete.ring,
-            pulseColor: DefaultPallete.billKruetzmann,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisuals
         },
         {
             sound: DrumSounds.snare,
             pulses: [4, 7, 9, 11, 12, 15],
-            ringColor: DefaultPallete.ring_alt,
-            pulseColor: DefaultPallete.pigpen,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisualsAlt
         },
         {
             sound: DrumSounds.closedHat,
             pulses: rangeWithDisclude(0, 16, [11, 7]), // all but 11 and 7
-            ringColor: DefaultPallete.ring,
-            pulseColor: DefaultPallete.robertHunter,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisuals
         },
         {
             sound: DrumSounds.openHat,
             pulses: [11, 7],
-            ringColor: DefaultPallete.ring_alt,
-            pulseColor: DefaultPallete.mickeyHart,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisualsAlt
         }
     ],
     length: 16
 }
 
-const ImpeachThePresident = {
+export const ImpeachThePresident = {
     name: "Impeach the President",
+    category: "Cat 2",
     rings: [
         {
             sound: DrumSounds.kick,
             pulses: [0, 7, 8, 14],
-            ringColor: DefaultPallete.ring,
-            pulseColor: DefaultPallete.billKruetzmann,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisuals
         },
         {
             sound: DrumSounds.snare,
             pulses: [4, 12],
-            ringColor: DefaultPallete.ring_alt,
-            pulseColor: DefaultPallete.pigpen,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisualsAlt
         },
         {
             sound: DrumSounds.closedHat,
             pulses: [0, 2, 4, 6, 7, 8, 12, 14],
-            ringColor: DefaultPallete.ring,
-            pulseColor: DefaultPallete.robertHunter,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisuals
         },
         {
             sound: DrumSounds.openHat,
             pulses: [10],
-            ringColor: DefaultPallete.ring_alt,
-            pulseColor: DefaultPallete.mickeyHart,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisualsAlt
         }
     ],
     length: 16
 }
 
-const WhenTheLeeveeBreaks = {
+export const WhenTheLeeveeBreaks = {
     name: "When the Leevee Breaks",
+    category: "Cat 3",
     rings: [
         {
             sound: DrumSounds.kick,
             pulses: [0, 1, 7, 10, 11],
-            ringColor: DefaultPallete.ring,
-            pulseColor: DefaultPallete.billKruetzmann,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisuals
         },
         {
             sound: DrumSounds.snare,
             pulses: [4, 12],
-            ringColor: DefaultPallete.ring_alt,
-            pulseColor: DefaultPallete.pigpen,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisualsAlt
         },
         {
             sound: DrumSounds.closedHat,
             pulses: [0, 2, 4, 6, 8, 10, 12, 14],
-            ringColor: DefaultPallete.ring,
-            pulseColor: DefaultPallete.robertHunter,
-            pulseVolume: DEFAULT_PULSE_VOLUME
+            ...DefaultRingVisuals
         },
     ],
     length: 16
 }
 
 // ******* CREATE STRUCTS FROM JSON FILES *************
-const RhythmsJson = [BillieJean, TheFunkyDrummer, ImpeachThePresident, WhenTheLeeveeBreaks]
-
-// from-json builder function
-export function buildRhythmFromJson(json) {
-    var rings = []
-    const length = json.length
-    for (let i=0; i<json.rings.length;i++){
-        const ringJson = json.rings[i]
-        // create struct objs from the json 
-        const ring = new Ring(length, createRestBeats(length), ringJson.ringColor)
-        const pulse = new Pulse(ringJson.pulseVolume, ringJson.sound, ringJson.pulseColor)
-        ring.addPulses(ringJson.pulses, pulse)
-
-        rings.push(ring)
-    }   
-    var rhythm = new Rhythm(rings, length, json.name)
-    return rhythm
-}
-
-export const RHYTHM_LIBRARY = RhythmsJson.map(json => buildRhythmFromJson(json))
-
-// HERE ARE CATEGORIES THAT EACH RHYTM BELONGS IN (CATEGORIES BY POSITION INDEX)
-export const RHYTHM_LIBRARY_CATEGORIES = [
-    {name: "Breakbeat", startIdx: 0, endIdx: 10}
-]
-
-export const DEFAULT_RHYTHM = buildRhythmFromJson(DebuggerRhythm) //RHYTHM_LIBRARY[0]
-
-// Each rhythm is categoriezed by its position in the RHYTHM_LIBRARY list
-export function getRhythmCategory(rhythm){
-    const libraryPos = RHYTHM_LIBRARY.indexOf(rhythm)
-    const categories = RHYTHM_LIBRARY_CATEGORIES
-    if (libraryPos == -1) {
-        console.log('ERROR: UNCATEGORIZED RHYTHM ***************************** \n\n\n\n\n ')
-    }
-
-    for (let i=0; i<categories.length;i++) {
-        const cat = categories[i]
-        if (libraryPos < cat.endIdx && libraryPos > cat.startIdx) {
-            // located category
-            return cat.name
-        }
-    }
-}
+export const DEFAULT_RHYTHMS_IN_JSON = [DebuggerRhythm]//, BillieJean, TheFunkyDrummer, ImpeachThePresident, WhenTheLeeveeBreaks]

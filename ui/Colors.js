@@ -1,16 +1,16 @@
-// Light colour pallete
 
-// Dark colour pallete
-
-// Default color pallete
 export const DefaultPallete = {
-    background: "#ECEFF1",
+    background: "#E8E8E8",
+    headerBackground: "#FAFAFA",
+    headerText: "#263238",
+    tabsBackground: "#2b2b2b",
     backgroundAddMode: "#C8E6C9",
     backgroundDelMode: "#FFCDD2",
     modeHeaderText: "#455A64",
-    menuBackground: "#CFD8DC",
+    menuBackground: "#455A64",
+    buttonMenuBackground: "#455A64",
     tabBar: "#FAFAFA",
-    tabBarText: "#BBDEFB",
+    tabBarText: "#607D8B",
     border: "#B0BEC5",
     title: "#455A64",
     rhythmName: "#FAFAFA",
@@ -20,31 +20,34 @@ export const DefaultPallete = {
     popupMenu: "#FAFAFA",
 
     textButton: "#03A9F4",
-    iconButton: "#303F9F",
+    iconButton: "#FAFAFA",
 
-    playButton: "#43A047",
-    stopButton: "#D50000",
+    playButton: "#4CAF50",
+    stopButton: "#FF5656",
     playButtonText: "#FAFAFA",
+
+    addButton: "#FAFAFA",
+    delButton: "#FF5656",
 
     button: "#B39DDB",
     buttonText: "#FAFAFA",
 
-    ring: "#9575CD",
-    ring_alt: "#8E24AA",
+    ring: "#607D8B",
+    ring_alt: "#78909C",
 
-    pulseOnbeat: "#FF5722",
-    pulseOffbeat: "#FFA726",
+    pulse: "#FFEB3B",
+    pulse_alt: "#FF8F00",
 
-    clockHand: "#EC407A",
+    clockHand: "#9C27B0",
 
     selectedItemContainer: "#FFCCBC",
     unselectedItemContainer: "#FAFAFA",
 
-    caretUp: "#4FC3F7",
-    caretDown: "#A5D6A7",
-    bpm: "#4527A0",
+    caretUp: "#FAFAFA",
+    caretDown: "#FAFAFA",
+    bpm: "#FAFAFA",
 
-    clockfaceText: "#455A64",
+    clockfaceText: "#263238",
 
     sliderBefore: "#4FC3F7",
     sliderAfter: "#303F9F",

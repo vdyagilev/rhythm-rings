@@ -1,15 +1,16 @@
 import Slider from '@react-native-community/slider';
-import React, { useState } from 'react';
-import { useEffect } from 'react';
-import { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import Svg, { Line } from 'react-native-svg';
 import { connect } from 'react-redux';
 import { BassSounds, DrumSounds, MajorChords, MinorChords, NoteSounds } from '../data_structures/Sounds';
-import { getCommonProperty, getCommonRingProperty, getDeviceNormFactor, getPosOnCircle, getViewHeight, getViewWidth } from '../Helpers';
+import { createNewPulse } from '../data_structures/Structs';
+import { calculateBeatIdxFromRingTouch, getCommonRingProperty, getDeviceNormFactor, getPosOnCircle, getViewHeight, getViewWidth } from '../Helpers';
+import { ADD_PULSE_MODE, DEL_PULSE_MODE, DEL_RING_MODE, PLAY_MODE } from '../screens/Constants';
 import { DefaultStyling } from '../screens/Styles';
-import { addSoundFileCache, setPulseColor, setPulseSound, setPulseSoundAndCacheIt, setPulseVolume, setRingColor } from '../storage/Actions';
+import { addPulseToRhythm, loadSoundCache, removePulseFromRhythm, removeRingFromRhythm, setPulseColor, setPulseSound, setPulseSoundAndCacheIt, setPulseVolume, setRingColor } from '../storage/Actions';
+import { getIsPlaying, getSelectedRhythm } from '../storage/Reducers';
 import { DefaultPallete } from './Colors';
 import { CLOCKHAND_WIDTH, LONGPRESS_LENGTH, PULSE_RADIUS, RING_INNERMOST_DIST, RING_SHIFT_DIST, RING_WIDTH } from './Constants';
 import { CircleView } from './Shapes';
@@ -27,32 +28,60 @@ class rhythmVisualizer extends React.Component {
     
 
     renderRings() {
-        const { dispatch } = this.props;
+        const { dispatch, mode } = this.props;
         const {rings, length} = this.props.rhythm 
         const innerColor = DefaultPallete.background
 
-        return rings.map((r, i) => 
+        return rings.map((ring, ringIdx) => {
             // Draw series of concentric rings, starting from innermost ring and extending outwards by shiftDist 
+            
+            const pulseCommonColor = getCommonRingProperty(ring, p => p.color) 
+            const pulseCommonVolume = getCommonRingProperty(ring, p => p.volume)
+            const pulseCommonSound = getCommonRingProperty(ring, p => p.sound)
+
+            return (
             <RingView 
-                key={i} 
-                radius={(i * RING_SHIFT_DIST) + RING_INNERMOST_DIST} 
+                key={ringIdx} 
+                radius={(ringIdx * RING_SHIFT_DIST) + RING_INNERMOST_DIST} 
                 width={RING_WIDTH} 
                 innerColor={innerColor}
+                numBeats={length}
 
-                ringColor={r.color} 
-                onUpdateRingColor={color => dispatch( setRingColor(r._id, color) )}
-                pulseCommonColor={ getCommonRingProperty(r, p => p.color) }
-                onUpdateCommonColor={ color => {r.beats.map(b => b != r.restValue ? dispatch( setPulseColor(b._id, color)) : {}) } }
-                pulseCommonVolume={ getCommonRingProperty(r, p => p.volume) }
-                onUpdateCommonVolume={ volume => {r.beats.map(b => b != r.restValue ? dispatch( setPulseVolume(b._id, volume)) : {}) }  }
-                pulseCommonSound={ getCommonRingProperty(r, p => p.sound) }
-                onUpdateCommonSound={ sound => {r.beats.map(b => b != r.restValue ? dispatch( setPulseSound(b._id, sound)) : {}) }  }
+                ringColor={ring.color} 
+                mode={mode}
+                
+                pulseCommonColor={ pulseCommonColor }
+                pulseCommonVolume={ pulseCommonVolume }
+                pulseCommonSound={ pulseCommonSound }
+                
+                onUpdateRingColor={color => dispatch( setRingColor(ring._id, color) )}
+                onUpdateCommonColor={ color => {
+                    ring.beats.map(b => b != ring.restValue 
+                        ? dispatch( setPulseColor(b._id, color)) : {}) 
+                    }
+                }
+                onUpdateCommonVolume={ volume => {
+                    ring.beats.map(b => b != ring.restValue ? 
+                        dispatch( setPulseVolume(b._id, volume)) : {}) 
+                }}
+                onUpdateCommonSound={ sound => {
+                    // change the .sound property of the current
+                    // rhythm's ring's in redux store
+                    ring.beats.map(b => b != ring.restValue 
+                        ? dispatch( setPulseSound(b._id, sound)) : {}) 
+                    
+                    // pull new sounds into cache
+                    dispatch( loadSoundCache() )
+                }}
+
+                onDelete={() =>{console.log("removing ring: ", ring._id) ;dispatch( removeRingFromRhythm(ring._id) ) }}
+                onAddPulse={(beatIdx) => { dispatch( addPulseToRhythm(ringIdx, beatIdx, createNewPulse())); console.log(ringIdx, beatIdx) } }
             />
-        )
+        )})
     }
 
     renderPulses() {
-        const { dispatch } = this.props
+        const { dispatch, mode } = this.props
 
         const {rings, length} = this.props.rhythm
 
@@ -81,12 +110,17 @@ class rhythmVisualizer extends React.Component {
                         fromXY={fromPos}
                         ringPos={bi} 
                         ringLen={ring.length}
+
                         color={beat.color}
+                        borderColor={ring.color}
                         onUpdateColor={ color => dispatch( setPulseColor(beat._id, color))  }
                         volume={beat.volume}
                         onUpdateVolume={ vol => dispatch( setPulseVolume(beat._id, vol) )}
                         sound={beat.sound}
                         onUpdateSound={ sound => dispatch( setPulseSoundAndCacheIt(beat._id, sound))}     
+                        
+                        mode={mode}
+                        onDelete={() => dispatch( removePulseFromRhythm(beat._id))}
                     />
                     )
                     views.push(view)
@@ -131,14 +165,24 @@ class rhythmVisualizer extends React.Component {
         const ringBot = this.vertMidpoint + RING_INNERMOST_DIST - 1.8*this.playButtonHeight 
         const ringCenter = {X: ringLeft + RING_INNERMOST_DIST, Y: ringTop + RING_INNERMOST_DIST}
 
-        const firstLabelPos = {X: ringCenter.X, Y: ringBot - (rings.length+1)*(2*RING_WIDTH+RING_SHIFT_DIST)+(40*getDeviceNormFactor())} // first label at the top
+        const firstLabelPos = {
+            X: ringCenter.X, 
+            // first label at the top
+            Y: ringBot - (rings.length+1)*(2*RING_WIDTH+RING_SHIFT_DIST)
+                + (30*getDeviceNormFactor())
+        } 
         
         var views = []
         for (let i=0; i<length; i++) {
             const { X, Y } = getPosOnCircle(length, i, firstLabelPos, ringCenter)
             // draw a text label for each half step. Integer on even num "+" on odd,
             if (i % 2 == 0) {
-                views.push((<Text key={i} style={[styles.clockfaceBeatNum, {position: 'absolute', left: X, top: Y}]}>{(i/2)+1}</Text>))
+                views.push((
+                <Text 
+                    key={i} 
+                    style={[styles.clockfaceBeatNum, {position: 'absolute', left: X, top: Y}]}
+                    >{(i/2)+1}
+                </Text>))
             } else {
                 views.push((<Text key={i} style={[styles.clockfaceBeatNum, {position: 'absolute', left: X, top: Y}]}>+</Text>))
             }
@@ -149,10 +193,15 @@ class rhythmVisualizer extends React.Component {
     render() {
         const { containerStyle } = this.props;
         
+        const shiftRhythmVisualizerUpDist = -this.playButtonHeight + 20*getDeviceNormFactor()
         return (
-            <View style={[containerStyle,]}>
-                {/* the -15% marginTop will center the visualizer inside parent */}
-                <View style={{marginTop: -this.playButtonHeight + 20*getDeviceNormFactor()}}> 
+            <View 
+                style={[containerStyle]}
+                >
+                    
+                <View 
+                    style={{marginTop: shiftRhythmVisualizerUpDist}}
+                > 
                     {/* DRAW RINGS */}
                     { this.renderRings().reverse() }
                     
@@ -173,7 +222,7 @@ class rhythmVisualizer extends React.Component {
 }
 
 function RingView(props) {
-    const { radius, width, ringColor, innerColor } = props
+    const { mode, onDelete, onAddPulse, radius, width, numBeats, ringColor, innerColor } = props
 
     // popup menu consts
     const { onUpdateRingColor, pulseCommonColor, onUpdateCommonColor, pulseCommonVolume, onUpdateCommonVolume, pulseCommonSound, onUpdateCommonSound  } = props
@@ -189,16 +238,45 @@ function RingView(props) {
     // Popup menu variables
     const [ menuVisible, setMenuVisible ] = useState(false)
 
-
     // WIDTH OF POPUP MENU ITEMS
     const popupMenuItemWidth = getViewWidth()*0.64
+
+    // onLongPressFn is active only during Play mode
+    const onLongPress = mode == PLAY_MODE ? (() => setMenuVisible(!menuVisible)) : (() => {})
+
+    // onQuickpress is active during an Edit mode
+    var onQuickPress 
+    switch (mode) {
+        case DEL_RING_MODE:
+            onQuickPress = () => onDelete()
+            break
+
+        case ADD_PULSE_MODE:
+            onQuickPress = (evt) => {
+                // calculate which beatIdx the tap was on the ring
+                const { locationX, locationY } = evt.nativeEvent
+                const firstPos = {X: horizMidpoint, Y: ringTop}
+                const centerPos = {X: horizMidpoint, Y: vertMidpoint}
+                const {inSlice, inCircle, beatIdx} = calculateBeatIdxFromRingTouch(locationX, locationY, firstPos, centerPos, numBeats)
+                
+                if (inSlice && inCircle) {
+                    onAddPulse(beatIdx)
+                }
+            }
+            break
+
+        default:
+            onQuickPress = () => {}
+            break
+    }
 
     return (
         // Visible Circle
 
         <TouchableOpacity
                 delayLongPress={LONGPRESS_LENGTH}
-                onLongPress={() => setMenuVisible(!menuVisible)}
+                onLongPress={ onLongPress }
+                onPress={ onQuickPress }
                 >
                 
         <CircleView style={{
@@ -284,15 +362,31 @@ function RingView(props) {
     )
 }
 
+
 function PulseView(props) {
     const [ menuVisible, setMenuVisible ] = useState(false)
 
-    const { radius, rotateAroundXY, fromXY, ringPos, ringLen, color, onUpdateColor, volume, onUpdateVolume, sound, onUpdateSound  } = props
+    const { mode, onDelete, radius, rotateAroundXY, fromXY, ringPos, ringLen, color, borderColor, onUpdateColor, volume, onUpdateVolume, sound, onUpdateSound  } = props
 
     // calculate the absolute position of dot on the ring, by rotating around ring's centre
     // to its ringPos in ringLen
     const { X, Y } = getPosOnCircle(ringLen, ringPos, fromXY, rotateAroundXY)
     
+    // onLongPressFn is active only during Play mode
+    const onLongPress = mode == PLAY_MODE ? (() => setMenuVisible(!menuVisible)) : (() => {})
+
+    // onQuickpress is active during an Edit mode
+    var onQuickPress 
+    switch (mode) {
+        case DEL_PULSE_MODE:
+            onQuickPress = () => onDelete()
+            break
+
+        default:
+            onQuickPress = () => {}
+            break
+    }
+
     return (
         
         <CircleView style={{
@@ -302,8 +396,19 @@ function PulseView(props) {
         }}>
             <TouchableOpacity
             delayLongPress={LONGPRESS_LENGTH}
-            onLongPress={() => setMenuVisible(!menuVisible)}>
-                <View style={{borderRadius: radius, width: radius*2, height: radius*2,}}/>
+            onLongPress={ () => onLongPress() }
+            onPress={ () => onQuickPress() }
+            >
+                
+                <View style={{
+                    borderWidth: 5*getDeviceNormFactor(), 
+                    borderColor: borderColor ? borderColor : backgroundColor,
+                    backgroundColor: color, 
+                    borderRadius: radius, 
+                    width: radius*2, 
+                    height: radius*2,
+                }}/>
+
             </TouchableOpacity>
 
             {/************ Edit Pulse popup modal **********/}
@@ -507,11 +612,11 @@ const styles = StyleSheet.create({
         fontWeight: '300',
     },
     clockfaceBeatNum: {
-        fontSize: 23 * getDeviceNormFactor(),
-        fontWeight: '300',
+        fontSize: 24 * getDeviceNormFactor(),
+        fontWeight: '800',
         color: DefaultPallete.clockfaceText,
-        marginTop: -15,
-        marginLeft: -8
+        marginTop: -15 * getDeviceNormFactor(),
+        marginLeft: -8 * getDeviceNormFactor(),
     },
     // popup menu
     settingText: {
@@ -528,8 +633,8 @@ const styles = StyleSheet.create({
 // Connect View to Redux store
 const mapStateToProps = (state, props) => {
     return { 
-      isPlaying: state.isPlaying,
-      rhythm: state.selectedRhythm,
+      isPlaying: getIsPlaying(state),
+      rhythm: getSelectedRhythm(state),
     }
 }
 export const RhythmVisualizer = connect(mapStateToProps)(rhythmVisualizer)

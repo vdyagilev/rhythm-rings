@@ -13,6 +13,8 @@ export const DefaultStyling = StyleSheet.create({
 
     // },
     backButton: {
+      paddingTop: '15%',
+      paddingBottom: '5%'
     },
     backButtonText: {
         fontSize: 20 * getDeviceNormFactor(),

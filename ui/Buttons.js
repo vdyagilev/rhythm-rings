@@ -1,14 +1,13 @@
 import { AntDesign, FontAwesome5 } from '@expo/vector-icons';
 import React from 'react';
-import { useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Text, TextInput } from 'react-native';
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { connect } from 'react-redux';
 import { getDeviceNormFactor, getScreenWidth } from '../Helpers';
 import { setBPM } from '../storage/Actions';
 import { DefaultPallete } from './Colors';
 
 export function PlayButton(props) {
-  const { onPressPlay, onPressStop, isPlaying } = props;
+  const { onPressPlay, onPressStop, isPlaying, containerStyle } = props;
 
   // Flip between Play and Stop mode  
   var backgroundColor
@@ -25,7 +24,7 @@ export function PlayButton(props) {
   }
 
   return (
-    <TouchableOpacity style={[styles.play_button, {backgroundColor: backgroundColor}]} onPress={onPress}>
+    <TouchableOpacity style={[styles.play_button, styles.containerStyle, {backgroundColor: backgroundColor}]} onPress={onPress}>
       { buttonIcon }
     </TouchableOpacity>
   );
@@ -37,7 +36,7 @@ export function TextButton(props) {
 
   return (
     <View style={containerStyle}>
-      <TouchableOpacity onPress={onPress} style={{flex: 1}}>
+      <TouchableOpacity onPress={onPress}>
         <Text style={textStyle}>{text}</Text>
       </TouchableOpacity>
     </View>
