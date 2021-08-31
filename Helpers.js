@@ -161,24 +161,42 @@ export function angleFromCircleCentreAndEdge(centerPos, edgePos, inDegrees) {
 }
 
 export function calculateBeatIdxFromRingTouch(locationX, locationY, topPos, centerPos, numBeats) {
-    // Given that topPos is the top of Ring with numBeats, and centerPos the center, calculate which beatIdx the touch was in
+    // Given that topPos is the top of Ring with numBeats, 
+    // and centerPos the center, calculate which beatIdx the touch was in
     // Pos: {X: num, Y: num}, returns: {inSlice: false, inCircle: false, beatIdx: -1}
 
-    for (let b=0; b<(numBeats-1); b++) {
+    for (let b=0; b<numBeats; b++) {
+
         // Calculate left and right slice coordinates of the circle pizza slice
-        var edgePosStart = getPosOnCircle(numBeats, b, topPos, centerPos)
-        var edgePosEnd = getPosOnCircle(numBeats, b+1, topPos, centerPos)
+        var startIdx, endIdx
+        if (b == numBeats-1) {
+            // last circle slice has a wrap-around 
+            startIdx = b
+            endIdx = 0
+           
+        } else {
+            startIdx = b
+            endIdx = b+1
+        }
+
+        var edgePosStart = getPosOnCircle(numBeats, startIdx, topPos, centerPos)
+        var edgePosEnd = getPosOnCircle(numBeats, endIdx, topPos, centerPos)
+
         
         // convert boundaries from points to angles
         const startAngle = angleFromCircleCentreAndEdge(centerPos, edgePosStart, false)
         const endAngle = angleFromCircleCentreAndEdge(centerPos, edgePosEnd, false)
         
+        
         // calculate if point is inside this pie slice
-        const ringRadius = Math.abs(topPos.X - centerPos.X)
+        const ringRadius = Math.abs(topPos.Y - centerPos.Y)
         const { inCircle, inSlice } = pointInPieSlice(centerPos, ringRadius, {X: locationX, Y: locationY}, startAngle, endAngle)
+
+        console.log("beat #", b, " inCircle: ", inCircle, " inSlice: ", inSlice)
 
         // return if inSlice
         if (inSlice) {
+            console.error("inslice found: beat #" , b,)
             return {inSlice: true, inCircle: true, beatIdx: b}
         }
 

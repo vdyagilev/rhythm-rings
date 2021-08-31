@@ -6,7 +6,7 @@ import Svg, { Line } from 'react-native-svg';
 import { connect } from 'react-redux';
 import { BassSounds, DrumSounds, MajorChords, MinorChords, NoteSounds } from '../data_structures/Sounds';
 import { createNewPulse } from '../data_structures/Structs';
-import { calculateBeatIdxFromRingTouch, getCommonRingProperty, getDeviceNormFactor, getPosOnCircle, getViewHeight, getViewWidth } from '../Helpers';
+import { calculateBeatIdxFromRingTouch, getCommonRingProperty, getDeviceNormFactor, getPosOnCircle, getScreenHeight, getScreenWidth, getViewHeight, getViewWidth } from '../Helpers';
 import { ADD_PULSE_MODE, DEL_PULSE_MODE, DEL_RING_MODE, PLAY_MODE } from '../screens/Constants';
 import { DefaultStyling } from '../screens/Styles';
 import { addPulseToRhythm, loadSoundCache, removePulseFromRhythm, removeRingFromRhythm, setPulseColor, setPulseSound, setPulseSoundAndCacheIt, setPulseVolume, setRingColor } from '../storage/Actions';
@@ -20,10 +20,8 @@ class rhythmVisualizer extends React.Component {
     constructor(props) {
         super(props)
 
-        // setting up ui properties
-        this.playButtonHeight = getViewHeight()*(0.03)+40 + (20 * getDeviceNormFactor()) // padding
         this.horizMidpoint = getViewWidth()/2
-        this.vertMidpoint = getViewHeight()/2
+        this.vertMidpoint = getViewHeight()/4
     }
     
 
@@ -46,6 +44,10 @@ class rhythmVisualizer extends React.Component {
                 width={RING_WIDTH} 
                 innerColor={innerColor}
                 numBeats={length}
+
+                // x,y coords relative to the screen (abs)
+                absCenterX={this.horizMidpoint}
+                absCenterY={this.vertMidpoint}
 
                 ringColor={ring.color} 
                 mode={mode}
@@ -87,7 +89,7 @@ class rhythmVisualizer extends React.Component {
 
         // render pulses (every beat is either a rest or a pulse)
         const ringLeft = this.horizMidpoint - RING_INNERMOST_DIST - RING_WIDTH
-        const ringTop = this.vertMidpoint - RING_INNERMOST_DIST - 1.8*this.playButtonHeight 
+        const ringTop = this.vertMidpoint - RING_INNERMOST_DIST 
         const ringCenter = {X: ringLeft + RING_INNERMOST_DIST, Y: ringTop + RING_INNERMOST_DIST}
 
         const firstPulsePos = {X: ringCenter.X, Y: ringTop+PULSE_RADIUS/3}
@@ -137,7 +139,7 @@ class rhythmVisualizer extends React.Component {
         const {rings, length} = rhythm 
 
         const ringLeft = this.horizMidpoint - RING_INNERMOST_DIST - RING_WIDTH
-        const ringTop = this.vertMidpoint - RING_INNERMOST_DIST - 1.8*this.playButtonHeight 
+        const ringTop = this.vertMidpoint - RING_INNERMOST_DIST 
         const ringCenter = {X: ringLeft + RING_INNERMOST_DIST, Y: ringTop + RING_INNERMOST_DIST}
 
         const firstPos = {
@@ -161,8 +163,8 @@ class rhythmVisualizer extends React.Component {
         const {rings, length} = this.props.rhythm 
 
         const ringLeft = this.horizMidpoint - RING_INNERMOST_DIST - RING_WIDTH
-        const ringTop = this.vertMidpoint - RING_INNERMOST_DIST - 1.8*this.playButtonHeight 
-        const ringBot = this.vertMidpoint + RING_INNERMOST_DIST - 1.8*this.playButtonHeight 
+        const ringTop = this.vertMidpoint - RING_INNERMOST_DIST 
+        const ringBot = this.vertMidpoint + RING_INNERMOST_DIST 
         const ringCenter = {X: ringLeft + RING_INNERMOST_DIST, Y: ringTop + RING_INNERMOST_DIST}
 
         const firstLabelPos = {
@@ -189,15 +191,13 @@ class rhythmVisualizer extends React.Component {
  
     render() {
         const { containerStyle } = this.props;
-        
-        const shiftRhythmVisualizerUpDist = -this.playButtonHeight + 20*getDeviceNormFactor()
+
         return (
             <View 
                 style={[containerStyle]}
                 >
                     
                 <View 
-                    style={{marginTop: shiftRhythmVisualizerUpDist}}
                 > 
                     {/* DRAW RINGS */}
                     { this.renderRings().reverse() }
@@ -219,18 +219,16 @@ class rhythmVisualizer extends React.Component {
 }
 
 function RingView(props) {
-    const { mode, onDelete, onAddPulse, radius, width, numBeats, ringColor, innerColor } = props
+    const { 
+        mode, onDelete, onAddPulse, radius, width, numBeats, ringColor, innerColor,
+        absCenterX, absCenterY, // absolute coords
+    } = props
 
     // popup menu consts
     const { onUpdateRingColor, pulseCommonColor, onUpdateCommonColor, pulseCommonVolume, onUpdateCommonVolume, pulseCommonSound, onUpdateCommonSound  } = props
-
-    // calculate absolute position to draw (left, top coord)
-    const horizMidpoint = getViewWidth()/2
-    const vertMidpoint = getViewHeight()/2 
-
-    const ringLeft = horizMidpoint - radius - width
-    const playButtonHeight = getViewHeight()*(0.03)+40 + (20 * getDeviceNormFactor()) // padding
-    const ringTop = vertMidpoint - radius - 1.8*playButtonHeight 
+    
+    const ringLeft = absCenterX - radius - width
+    const ringTop = absCenterY - radius 
     
     // Popup menu variables
     const [ menuVisible, setMenuVisible ] = useState(false)
@@ -251,11 +249,39 @@ function RingView(props) {
         case ADD_PULSE_MODE:
             onQuickPress = (evt) => {
                 // calculate which beatIdx the tap was on the ring
+
+                // get touch coord (absolute by screen)
                 const { locationX, locationY } = evt.nativeEvent
-                const firstPos = {X: horizMidpoint, Y: ringTop}
-                const centerPos = {X: horizMidpoint, Y: vertMidpoint}
-                const {inSlice, inCircle, beatIdx} = calculateBeatIdxFromRingTouch(locationX, locationY, firstPos, centerPos, numBeats)
+
+                // calc relative element positions
+                // NOTE: elements have (0, 0) as top left
+
+                // distance between screen (0,0) and this rings (0,0)
+                const verticalShiftDist = absCenterY - radius
+                const horizontalShiftDist = absCenterX - radius
+
+                // midpoint relative to this ring
+                const relativeCenterX = radius/2
+                const relativeCenterY = radius/2
+
+                // transform touch coord from screen to this ring by 
+                // subtracting the horizontal and vertical Shift Distance
+                const relativeTouchX = locationX - horizontalShiftDist
+                const relativeTouchY = locationY - verticalShiftDist 
                 
+                // coord's of the top of the ring. used to calculate if within slice 
+                const firstPos = {X: relativeCenterX, Y: 0}
+                const centerPos = {X: relativeCenterX, Y: relativeCenterY}
+
+                console.log("\nabsolute touch: (", locationX, locationY, ")")
+                console.log("relative touch: (", relativeCenterX, relativeTouchY, ")")
+                console.log("radius: ", radius, " width: ", width)
+                console.log("shift distances: vert=", verticalShiftDist, " horiz=", horizontalShiftDist)
+                
+                const {inSlice, inCircle, beatIdx} = calculateBeatIdxFromRingTouch(relativeTouchX, relativeTouchY, firstPos, centerPos, numBeats)
+                
+                console.log("\ntouch test: ", inSlice, inCircle, beatIdx)
+
                 if (inSlice && inCircle) {
                     onAddPulse(beatIdx)
                 }

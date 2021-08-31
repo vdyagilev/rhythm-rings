@@ -234,10 +234,16 @@ class _HomeScreen extends React.Component {
     return (
       <View style={ [DefaultStyling.screen, {backgroundColor: backgroundColor}] }>
 
+      {/* Depending on MODE, render different text, and have a back button */}
       { modeHeader ? (
         <View style={[styles.info_container, {flexDirection: 'column'} ]}>
-            <TextButton text={"Back"} onPress={() => this.setState({mode: PLAY_MODE})} textStyle={styles.textButton} containerStyle={{flex: 0}}/>
+            <TextButton 
+              text={"Go Back"} 
+              onPress={() => this.setState({mode: PLAY_MODE})} 
+              textStyle={styles.textButton}
+            />
             { modeHeader }
+           
         </View>
       ) : (
         <View style={styles.info_container}>
@@ -376,19 +382,18 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     width: '100%',
     textAlign: 'center',
-    fontSize: 16 * getDeviceNormFactor(),
-    fontWeight: '300',
-    color: DefaultPallete.textButton,
-    paddingBottom: 3 * getDeviceNormFactor(),
-    paddingTop: 5 * getDeviceNormFactor()
+    fontSize: 15 * getDeviceNormFactor(),
+    fontWeight: '400',
+    color: DefaultPallete.modeBackButton,
+    paddingTop: 10
   },
     modeHeaderText: {
       width: '100%',
       paddingVertical: '5%',
       textAlign: 'center',
       fontSize: 22 * getDeviceNormFactor(),
-      fontWeight: '500',
-      color: DefaultPallete.title,
+      fontWeight: '700',
+      color: DefaultPallete.rhythmName,
     },
     action_buttons_container: {
       flex: 1,

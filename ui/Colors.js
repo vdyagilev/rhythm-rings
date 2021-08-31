@@ -14,6 +14,7 @@ export const DefaultPallete = {
     border: "#B0BEC5",
     title: "#455A64",
     rhythmName: "#FAFAFA",
+    modeBackButton: "#FAFAFA",
 
     loadingIndicator: "#673AB7",
 
